@@ -4,6 +4,11 @@ import { db } from "@/db";
 import { books, media, posts } from "@/db/schema";
 import { mediaUrl, siteUrl } from "@/lib/seo";
 
+// The database is migrated when the Railway container starts, after the image
+// has been built. Generate the sitemap at request time so a fresh deployment
+// does not query tables that do not exist yet during `next build`.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [publishedBooks, publishedPosts] = await Promise.all([
     db.select({ slug: books.slug, updatedAt: books.updatedAt, coverPath: media.path }).from(books).leftJoin(media, eq(books.coverMediaId, media.id)).where(eq(books.published, true)).orderBy(desc(books.updatedAt)),

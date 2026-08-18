@@ -1,0 +1,1 @@
+CREATE INDEX `book_gallery_book_sort_idx` ON `book_gallery` (`book_id`,`sort_order`);

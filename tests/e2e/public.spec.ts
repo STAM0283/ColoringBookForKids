@@ -1,0 +1,1 @@
+import {test,expect} from "@playwright/test";test("accueil et navigation",async({page})=>{await page.goto("/");await expect(page.getByRole("heading",{level:1})).toContainText("grandes histoires");await page.getByRole("link",{name:"Activités gratuites"}).first().click();await expect(page).toHaveURL(/activites/)});

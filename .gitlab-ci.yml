@@ -1,0 +1,36 @@
+stages: [quality,test,build,deploy]
+default: {image: node:22-bookworm, cache: {key: "$CI_COMMIT_REF_SLUG", paths: [node_modules/]}}
+before_script: ["npm ci"]
+lint: {stage: quality, script: ["npm run lint"]}
+typecheck: {stage: quality, script: ["npm run typecheck"]}
+test: {stage: test, script: ["npm test"]}
+build:
+ stage: build
+ script:
+  - test -n "$NEXT_PUBLIC_SITE_URL"
+  - test -n "$AUTH_SECRET"
+  - test -n "$ADMIN_EMAIL"
+  - test -n "$ADMIN_PASSWORD"
+  - export APP_ENV=production NODE_ENV=production AUTH_TRUST_HOST=true
+  - export DATABASE_PATH=/var/www/data/database/site.db MEDIA_ROOT=/var/www/data/media BACKUP_ROOT=/var/www/data/backups OVH_STORAGE_CAPACITY_BYTES=42949672960
+  - npm run env:check
+  - npm run db:generate
+  - npm run build
+  - mkdir -p bundle/.next bundle/public bundle/migrations
+  - cp -a .next/standalone/. bundle/
+  - mkdir -p bundle/node_modules
+  - cp -a node_modules/drizzle-orm node_modules/better-sqlite3 node_modules/bcryptjs node_modules/bindings node_modules/file-uri-to-path bundle/node_modules/
+  - cp -a .next/static bundle/.next/static
+  - cp -a public/. bundle/public/
+  - cp -a src/db/migrations/. bundle/migrations/
+  - cp deploy/runtime-init.cjs deploy/check-env.cjs ecosystem.config.cjs bundle/
+  - tar -czf artifact.tar.gz -C bundle .
+  - sha256sum artifact.tar.gz > artifact.tar.gz.sha256
+ artifacts: {paths: [artifact.tar.gz,artifact.tar.gz.sha256], expire_in: 1 day}
+deploy_production:
+ stage: deploy
+ before_script: []
+ needs: [build,lint,typecheck,test]
+ rules: [{if: '$CI_COMMIT_BRANCH == "main"'}]
+ script: ["scp artifact.tar.gz artifact.tar.gz.sha256 deploy/deploy.sh $DEPLOY_USER@$DEPLOY_HOST:/tmp/", "ssh $DEPLOY_USER@$DEPLOY_HOST 'cd /tmp && bash deploy.sh && rm -f artifact.tar.gz artifact.tar.gz.sha256 deploy.sh'"]
+ environment: {name: production, url: "https://$DEPLOY_HOST"}

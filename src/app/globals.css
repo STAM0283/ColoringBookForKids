@@ -1,0 +1,482 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+:root{--background:42 55% 97%;--foreground:222 28% 16%;--card:0 0% 100%;--border:35 22% 87%;--primary:151 38% 34%;--secondary:32 74% 84%;--accent:13 68% 64%;--radius:1.35rem;--font-title:"Arial Rounded MT Bold";--font-body:Arial}
+.dark{--background:220 22% 10%;--foreground:40 30% 94%;--card:220 20% 14%;--border:220 14% 24%;--primary:150 38% 55%;--secondary:32 45% 30%;--accent:13 68% 66%}
+*{border-color:hsl(var(--border))}html{scroll-behavior:smooth;scroll-padding-top:6rem;scrollbar-gutter:stable}body{min-width:320px;background:hsl(var(--background));color:hsl(var(--foreground));font-family:var(--font-body);text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}::selection{background:hsl(var(--primary)/.22);color:hsl(var(--foreground))}button,a,input,textarea,select{touch-action:manipulation}.container{margin-inline:auto;max-width:1200px;padding-inline:clamp(1rem,3vw,1.5rem)}.paper-grid{background-image:radial-gradient(hsl(var(--primary)/.12) 1px,transparent 1px);background-size:24px 24px}.focus-ring{outline:none}.focus-ring:focus-visible{box-shadow:0 0 0 3px hsl(var(--primary)/.3)}.content-auto{content-visibility:auto;contain-intrinsic-size:1px 800px}.text-balance{text-wrap:balance}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.admin-login-input {
+  color-scheme: light;
+  color: #0f172a !important;
+  background-color: #f8fafc !important;
+  caret-color: #173f34;
+}
+
+.rich-article h2 {
+  color: hsl(var(--foreground));
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.65em;
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 1.6em 0 .6em;
+}
+
+.rich-article h3 {
+  color: hsl(var(--foreground));
+  font-size: 1.25em;
+  font-weight: 800;
+  margin: 1.35em 0 .5em;
+}
+
+.container.max-w-4xl { max-width: 56rem; }
+.rich-article { min-width: 0; width: 100%; max-width: 48rem; color: hsl(var(--foreground) / .78); overflow-wrap: anywhere; word-break: normal; }
+.rich-article > * { max-width: 100%; }
+.rich-article p { margin: 1.15em 0; }
+.rich-article ul { list-style: disc; margin: 1em 0; padding-left: 1.6em; }
+.rich-article ol { list-style: decimal; margin: 1em 0; padding-left: 1.6em; }
+.rich-article li { margin: .35em 0; }
+.rich-article strong { color: hsl(var(--foreground)); }
+.rich-article blockquote { border-left: 4px solid hsl(var(--primary)); color: hsl(var(--foreground) / .72); margin: 1.25em 0; padding: .5em 0 .5em 1.25em; }
+.rich-article a { color: hsl(var(--primary)); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.rich-article img, .rich-article video, .rich-article iframe { display: block; height: auto; max-width: 100%; }
+.rich-article pre { max-width: 100%; overflow-x: auto; white-space: pre; }
+.rich-article code { overflow-wrap: anywhere; }
+.rich-article table { display: block; max-width: 100%; overflow-x: auto; }
+@media (max-width: 639px) {
+  .rich-article { font-size: 1rem; line-height: 1.75; }
+  .rich-article h2 { font-size: 1.45em; }
+  .rich-article h3 { font-size: 1.18em; }
+  .rich-article ul, .rich-article ol { padding-left: 1.25em; }
+  .rich-article blockquote { padding-left: .9em; }
+}
+.dark .rich-article { color: rgb(226 232 240); }
+.dark .rich-article h2, .dark .rich-article h3, .dark .rich-article strong { color: hsl(var(--foreground)); }
+.dark [class~="text-foreground/60"] { color: hsl(var(--foreground) / .72); }
+.dark [class~="text-foreground/55"] { color: hsl(var(--foreground) / .66); }
+.dark [class~="text-foreground/50"] { color: hsl(var(--foreground) / .61); }
+.dark [class~="text-foreground/45"] { color: hsl(var(--foreground) / .56); }
+.admin-login-input:-webkit-autofill,
+.admin-login-input:-webkit-autofill:hover,
+.admin-login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+  box-shadow: 0 0 0 1000px #f8fafc inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+html[data-text-size="compact"] { font-size: 14px; }
+html[data-text-size="standard"] { font-size: 16px; }
+html[data-text-size="comfortable"] { font-size: 17px; }
+html[data-text-size="large"] { font-size: 19px; }
+
+/* Galeries publiques : grandes cartes alignées sous le titre. */
+div.grid.max-w-md.xl\:grid-cols-4 {
+  width: 100% !important;
+  max-width: 30rem !important;
+  margin-inline: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+div.grid.max-w-3xl.xl\:grid-cols-4 {
+  width: 100% !important;
+  max-width: 58rem !important;
+  margin-inline: 0 !important;
+}
+@media (min-width: 1280px) {
+  div.grid.xl\:grid-cols-4:not(.max-w-md):not(.max-w-3xl) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  div.grid.max-w-3xl.xl\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  div.public-image-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  div.public-image-grid.max-w-md {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  div.public-image-grid.max-w-3xl {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+.container > div.mb-8:has(+ div.grid.xl\:grid-cols-4) {
+  margin-bottom: 1.25rem !important;
+}
+
+/* Boutons de consultation du back-office */
+[aria-label="Consulter"] {
+  border-color: #dbeafe !important;
+  background: linear-gradient(145deg, #eff6ff, #dbeafe) !important;
+  color: #2563eb !important;
+  box-shadow: 0 6px 16px -10px rgba(37, 99, 235, 0.8);
+}
+[aria-label="Consulter"]:hover {
+  border-color: #bfdbfe !important;
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  transform: translateY(-2px) scale(1.04);
+}
+
+/* Tooltips modernes pour les actions représentées par une icône */
+@media (hover: hover) and (pointer: fine) {
+  button[aria-label]:not(.absolute):not(.overflow-hidden),
+  a[aria-label]:not(.absolute):not(.overflow-hidden) {
+    position: relative;
+  }
+
+  button[aria-label]:not(.absolute):not(.overflow-hidden)::before,
+  a[aria-label]:not(.absolute):not(.overflow-hidden)::before {
+    content: "";
+    position: absolute;
+    z-index: 1001;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    background: #0f172a;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px) rotate(45deg);
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+
+  button[aria-label]:not(.absolute):not(.overflow-hidden)::after,
+  a[aria-label]:not(.absolute):not(.overflow-hidden)::after {
+    content: attr(aria-label);
+    position: absolute;
+    z-index: 1000;
+    bottom: calc(100% + 9px);
+    left: 50%;
+    width: max-content;
+    max-width: 220px;
+    padding: 8px 11px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.96);
+    color: #fff;
+    box-shadow: 0 12px 30px -12px rgba(15, 23, 42, 0.8);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    text-align: center;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px) scale(0.96);
+    transform-origin: bottom center;
+    transition: opacity 150ms ease, transform 150ms ease;
+    backdrop-filter: blur(8px);
+  }
+
+  button[aria-label]:not(.absolute):not(.overflow-hidden):is(:hover, :focus-visible)::before,
+  a[aria-label]:not(.absolute):not(.overflow-hidden):is(:hover, :focus-visible)::before {
+    opacity: 1;
+    transform: translate(-50%, 0) rotate(45deg);
+  }
+
+  button[aria-label]:not(.absolute):not(.overflow-hidden):is(:hover, :focus-visible)::after,
+  a[aria-label]:not(.absolute):not(.overflow-hidden):is(:hover, :focus-visible)::after {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  /* Les actions placées à droite gardent leur bulle dans la carte. */
+  button[aria-label*="description"]::after,
+  button[aria-label*="galerie"]::after {
+    top: auto !important;
+    bottom: calc(100% + 10px) !important;
+    right: -8px !important;
+    left: auto !important;
+    width: 180px !important;
+    max-width: 190px !important;
+    overflow-wrap: anywhere;
+    transform: translateY(4px) scale(0.96) !important;
+    transform-origin: bottom right;
+  }
+
+  button[aria-label*="description"]::before,
+  button[aria-label*="galerie"]::before {
+    top: auto !important;
+    bottom: calc(100% + 6px) !important;
+    right: 15px !important;
+    left: auto !important;
+    transform: translateY(4px) rotate(45deg) !important;
+  }
+
+  button[aria-label*="description"]:is(:hover, :focus-visible)::after,
+  button[aria-label*="galerie"]:is(:hover, :focus-visible)::after {
+    transform: translateY(0) scale(1) !important;
+  }
+
+  button[aria-label*="description"]:is(:hover, :focus-visible)::before,
+  button[aria-label*="galerie"]:is(:hover, :focus-visible)::before {
+    transform: translateY(0) rotate(45deg) !important;
+  }
+
+  /* Dans l'en-tête, les bulles s'ouvrent vers le bas pour rester dans l'écran. */
+  header button[aria-label]::after,
+  header a[aria-label]::after {
+    top: calc(100% + 9px);
+    bottom: auto;
+    right: 0;
+    left: auto;
+    transform: translateY(-4px) scale(0.96);
+    transform-origin: top right;
+  }
+
+  header button[aria-label]::before,
+  header a[aria-label]::before {
+    top: calc(100% + 5px);
+    bottom: auto;
+    right: 15px;
+    left: auto;
+    transform: translateY(-4px) rotate(45deg);
+  }
+
+  header button[aria-label]:is(:hover, :focus-visible)::after,
+  header a[aria-label]:is(:hover, :focus-visible)::after {
+    transform: translateY(0) scale(1);
+  }
+
+  header button[aria-label]:is(:hover, :focus-visible)::before,
+  header a[aria-label]:is(:hover, :focus-visible)::before {
+    transform: translateY(0) rotate(45deg);
+  }
+
+  /* La fermeture est en haut des fenêtres : sa bulle doit rester dans la popup. */
+  [role="dialog"] button[aria-label="Fermer"]::after {
+    top: calc(100% + 9px);
+    bottom: auto;
+    right: 0;
+    left: auto;
+    transform: translateY(-4px) scale(0.96);
+    transform-origin: top right;
+  }
+
+  [role="dialog"] button[aria-label="Fermer"]::before {
+    top: calc(100% + 5px);
+    bottom: auto;
+    right: 15px;
+    left: auto;
+    transform: translateY(-4px) rotate(45deg);
+  }
+
+  [role="dialog"] button[aria-label="Fermer"]:is(:hover, :focus-visible)::after {
+    transform: translateY(0) scale(1);
+  }
+
+  [role="dialog"] button[aria-label="Fermer"]:is(:hover, :focus-visible)::before {
+    transform: translateY(0) rotate(45deg);
+  }
+
+  /* Les contrôles placés dans une couche absolue (points de carrousel, modales)
+     gardent leur libellé accessible sans créer une bulle qui serait découpée. */
+  .absolute button[aria-label]::before,
+  .absolute button[aria-label]::after,
+  .absolute a[aria-label]::before,
+  .absolute a[aria-label]::after {
+    content: none;
+  }
+}
+
+/* Sélecteurs de fichiers du back-office */
+.admin-activity-list article {
+  overflow: visible !important;
+}
+
+main input[type="file"] {
+  cursor: pointer;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+main input[type="file"]::file-selector-button {
+  min-height: 42px;
+  margin-right: 14px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #047857, #059669);
+  color: #fff;
+  box-shadow: 0 8px 18px -10px rgba(5, 150, 105, 0.8);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+main input[type="file"]:hover::file-selector-button {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -12px rgba(5, 150, 105, 0.95);
+  filter: brightness(1.06);
+}
+
+main input[type="file"]:focus-visible {
+  outline: 0;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.13);
+}
+
+/* Aide contextuelle du back-office : bulle compacte qui suit le défilement. */
+.admin-help-bubble {
+  position: fixed !important;
+  right: 1.5rem !important;
+  bottom: 1.5rem !important;
+  z-index: 90 !important;
+  display: grid !important;
+  width: 3.5rem !important;
+  min-width: 3.5rem !important;
+  height: 3.5rem !important;
+  min-height: 3.5rem !important;
+  padding: 0 !important;
+  place-items: center !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  border-radius: 9999px !important;
+  background: #173f34 !important;
+  color: #fff !important;
+  box-shadow: 0 16px 35px -14px rgba(15,23,42,.65) !important;
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease !important;
+}
+.admin-help-bubble:hover { transform: translateY(-3px) scale(1.04); background: #205343 !important; box-shadow: 0 20px 40px -14px rgba(15,23,42,.72) !important; }
+.admin-help-bubble:focus-visible { outline: 0; box-shadow: 0 0 0 5px rgba(110,231,183,.35), 0 16px 35px -14px rgba(15,23,42,.65) !important; }
+.admin-help-bubble::before,.admin-help-bubble::after { content: none !important; }
+.admin-help-label {
+  position: absolute;
+  right: calc(100% + .65rem);
+  width: max-content;
+  max-width: 12rem;
+  padding: .65rem .85rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: .85rem;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: 0 12px 30px -16px rgba(15,23,42,.7);
+  font-size: .78rem;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(.4rem) scale(.96);
+  transform-origin: right center;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.admin-help-bubble:is(:hover,:focus-visible) .admin-help-label { opacity: 1; transform: translateX(0) scale(1); }
+@media (max-width: 639px) { .admin-help-bubble { right: 1rem !important; bottom: 1rem !important; width: 3.25rem !important; min-width: 3.25rem !important; height: 3.25rem !important; min-height: 3.25rem !important; } .admin-help-label { display: none; } }
+
+/* Modification vidéo : format paysage pour conserver toutes les actions visibles. */
+@media (min-width: 768px) {
+  .asset-modal:has(input[accept*="image/jpeg"]) {
+    max-width: 56rem !important;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+    gap: 1.25rem;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > * {
+    margin-top: 0 !important;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > :nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > :nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: stretch;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > :nth-child(4) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > :nth-child(3) > label {
+    min-height: 20rem;
+    height: calc(100% - 1.75rem);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .asset-modal:has(input[accept*="image/jpeg"]) > div > header + div > :nth-child(3) > label > span:first-child {
+    width: 100% !important;
+    height: 14rem !important;
+    flex-shrink: 0;
+  }
+}
+
+/* Back-office sombre : les anciennes vues utilisent encore des couleurs Slate
+   explicites. Cette couche les raccorde aux variables du thème sans altérer
+   leur présentation claire. */
+.dark .admin-shell { color-scheme: dark; }
+.dark .admin-shell [class~="bg-white"] {
+  background-color: hsl(var(--card)) !important;
+}
+.dark .admin-shell [class~="bg-slate-50"],
+.dark .admin-shell [class~="bg-slate-50/60"],
+.dark .admin-shell [class~="bg-slate-50/70"],
+.dark .admin-shell [class~="bg-slate-50/80"] {
+  background-color: hsl(var(--foreground) / .045) !important;
+}
+.dark .admin-shell [class~="bg-slate-100"] {
+  background-color: hsl(var(--foreground) / .09) !important;
+}
+.dark .admin-shell [class~="text-slate-950"],
+.dark .admin-shell [class~="text-slate-900"],
+.dark .admin-shell [class~="text-slate-800"] {
+  color: hsl(var(--foreground)) !important;
+}
+.dark .admin-shell [class~="text-slate-700"],
+.dark .admin-shell [class~="text-slate-600"] {
+  color: hsl(var(--foreground) / .76) !important;
+}
+.dark .admin-shell [class~="text-slate-500"] {
+  color: hsl(var(--foreground) / .58) !important;
+}
+.dark .admin-shell [class~="text-slate-400"] {
+  color: hsl(var(--foreground) / .43) !important;
+}
+.dark .admin-shell [class~="border-slate-100"],
+.dark .admin-shell [class~="border-slate-200"],
+.dark .admin-shell [class~="border-slate-300"] {
+  border-color: hsl(var(--border)) !important;
+}
+.dark .admin-shell input:not([type="checkbox"]):not([type="radio"]),
+.dark .admin-shell textarea,
+.dark .admin-shell select {
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--background) / .72);
+  color: hsl(var(--foreground));
+  caret-color: hsl(var(--primary));
+}
+.dark .admin-shell input::placeholder,
+.dark .admin-shell textarea::placeholder { color: hsl(var(--foreground) / .35); }
+.dark .admin-shell select option {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+.dark .admin-shell [class~="bg-emerald-50"],
+.dark .admin-shell [class~="bg-emerald-50/40"] {
+  background-color: rgb(16 185 129 / .09) !important;
+}
+.dark .admin-shell [class~="bg-blue-50"] { background-color: rgb(59 130 246 / .10) !important; }
+.dark .admin-shell [class~="bg-amber-50"] { background-color: rgb(245 158 11 / .10) !important; }
+.dark .admin-shell [class~="bg-red-50"] { background-color: rgb(239 68 68 / .10) !important; }
+.dark .admin-shell [class~="from-emerald-50"] {
+  --tw-gradient-from: rgb(6 78 59 / .34) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(6 78 59 / 0) var(--tw-gradient-to-position) !important;
+}
+.dark .admin-shell [class~="via-white"],
+.dark .admin-shell [class~="to-white"] {
+  --tw-gradient-via: hsl(var(--card)) var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: hsl(var(--card)) var(--tw-gradient-to-position) !important;
+}
+.dark .admin-shell table thead { background-color: hsl(var(--foreground) / .045); }
+.dark .admin-shell .shadow-sm,
+.dark .admin-shell .shadow-md,
+.dark .admin-shell .shadow-lg,
+.dark .admin-shell .shadow-xl,
+.dark .admin-shell .shadow-2xl { --tw-shadow-color: rgb(0 0 0 / .35); }

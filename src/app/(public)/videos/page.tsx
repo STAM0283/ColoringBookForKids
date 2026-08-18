@@ -1,0 +1,17 @@
+import { Film, Sparkles } from "lucide-react";
+import { mediaRepository } from "@/repositories/media.repository";
+import { VideoGallery } from "@/components/public/video-gallery";
+import { ListingFilters } from "@/components/public/listing-filters";
+import { EmptyState, Pagination } from "@/components/ui";
+
+export const metadata = { title: "Vidéos créatives et activités pour enfants", description: "Regardez les coulisses, coloriages et activités créatives du Petit Crayon.", alternates: { canonical: "/videos" }, openGraph: { url: "/videos", title: "Vidéos créatives pour enfants", description: "Coloriages, activités et coulisses à regarder en famille." } };
+
+export default async function VideosPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string; category?: string; sort?: string }> }) {
+  const params = await searchParams;
+  const sort = params.sort === "oldest" ? "oldest" : "newest";
+  const [result,categories] = await Promise.all([mediaRepository.paginatedPublishedVideos({ page: Number(params.page) || 1, pageSize: 9, search: params.q, category: params.category, sort }),mediaRepository.videoCategoryOptions()]);
+  const items = result.items.map(({ vlog, video, thumbnail }) => ({ id: vlog.id, title: vlog.title, description: vlog.description, duration: vlog.duration, path: video?.path ?? null, mimeType: video?.mimeType ?? null, thumbnailPath: thumbnail?.path ?? null }));
+  return <>
+    <section className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-b from-[#f4f6f2] to-background py-6 dark:from-[#111a18] dark:via-[#121a19] dark:to-background md:py-8"><div className="pointer-events-none absolute -left-24 -top-16 size-64 rounded-full bg-emerald-200/25 blur-3xl dark:bg-emerald-500/10"/><div className="pointer-events-none absolute -right-24 top-0 size-72 rounded-full bg-blue-200/20 blur-3xl dark:bg-blue-500/10"/><div className="container relative"><header className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-primary md:text-xs"><Sparkles size={14}/> À regarder ensemble</span><h1 className="mt-2 font-display text-3xl font-black leading-tight text-slate-900 dark:text-white md:text-4xl">La créativité <span className="text-primary">prend vie.</span></h1><p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300 md:text-base">Coulisses, coloriages et activités à découvrir dans un format vivant et joyeux.</p></div><div className="inline-flex w-fit items-center gap-2.5 rounded-2xl border bg-card/85 px-3 dark:border-white/10 dark:bg-white/5 py-2 shadow-sm"><Film className="text-primary" size={18}/><strong className="text-lg leading-none">{result.total}</strong><span className="text-xs font-semibold text-foreground/55">vidéo{result.total > 1 ? "s" : ""}</span></div></header><ListingFilters title="Trouver une vidéo" query={params.q} category={params.category} sort={sort} categories={categories} searchPlaceholder="Rechercher une vidéo…"/><p className="mb-4 text-sm font-semibold text-foreground/60">{result.total} vidéo{result.total > 1 ? "s" : ""} trouvée{result.total > 1 ? "s" : ""}</p>{items.length ? <VideoGallery items={items}/> : <EmptyState title="Aucune vidéo publiée"/>}<Pagination page={result.page} pages={result.pages} path="/videos" query={{ q: params.q, category: params.category, sort }}/></div></section>
+  </>;
+}

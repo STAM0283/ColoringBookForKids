@@ -1,0 +1,3 @@
+import { ActivityManagementList } from "@/components/admin/activity-management-list";
+import { ImageToPdf } from "@/components/admin/image-to-pdf";
+export default function ActivitiesPage(){return <div className="mx-auto max-w-6xl"><header className="mb-7"><p className="text-xs font-black uppercase tracking-[.2em] text-emerald-700">Publication</p><h1 className="mt-2 text-3xl font-black">Activités gratuites</h1><p className="mt-2 max-w-3xl text-slate-500">Convertissez vos images en PDF, ajoutez l’activité puis gérez ce qui est visible sur le site depuis une seule page.</p></header><ImageToPdf/><div className="mt-8"><ActivityManagementList/></div></div>}

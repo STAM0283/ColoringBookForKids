@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env*
+!.env.example
+!deploy/.env.production.example
+data/database/*.db*
+data/media/**/*
+!data/media/**/.gitkeep
+coverage/
+playwright-report/
+test-results/
+tsconfig.tsbuildinfo
+npm-debug.log*

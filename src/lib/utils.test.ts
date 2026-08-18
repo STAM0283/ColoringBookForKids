@@ -1,0 +1,1 @@
+import {describe,expect,it} from "vitest";import {slugify} from "./utils";describe("slugify",()=>{it("produit des slugs sûrs",()=>expect(slugify("À l'école des Étoiles !")).toBe("a-l-ecole-des-etoiles"))});

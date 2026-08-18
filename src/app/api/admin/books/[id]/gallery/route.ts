@@ -1,0 +1,11 @@
+import sharp from "sharp";
+import {asc,eq} from "drizzle-orm";
+import {auth} from "@/auth";
+import {db} from "@/db";
+import {bookGallery,books,media} from "@/db/schema";
+import {storageService} from "@/lib/storage/local-storage";
+
+async function admin(){return(await auth())?.user.role==="ADMIN"}
+export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){if(!await admin())return Response.json({message:"Non autorisé."},{status:401});const{id}=await params,items=await db.select({gallery:bookGallery,image:media}).from(bookGallery).innerJoin(media,eq(bookGallery.mediaId,media.id)).where(eq(bookGallery.bookId,id)).orderBy(asc(bookGallery.sortOrder));return Response.json({items})}
+
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){if(!await admin())return Response.json({message:"Non autorisé."},{status:401});const{id}=await params;if(!await db.query.books.findFirst({where:eq(books.id,id)}))return Response.json({message:"Livre introuvable."},{status:404});const form=await request.formData(),files=form.getAll("images").filter((value):value is File=>value instanceof File&&value.size>0);if(!files.length)return Response.json({message:"Sélectionnez au moins une image."},{status:400});if(files.length>12)return Response.json({message:"Vous pouvez importer 12 images à la fois."},{status:400});const current=await db.select({id:bookGallery.id}).from(bookGallery).where(eq(bookGallery.bookId,id));try{for(const[index,file]of files.entries()){await storageService.validateFile(file,"IMAGE");const meta=await sharp(Buffer.from(await file.arrayBuffer())).metadata(),stored=await storageService.uploadFile(file,"IMAGE"),mediaId=crypto.randomUUID();await db.insert(media).values({id:mediaId,type:"IMAGE",filename:stored.filename,originalName:file.name,mimeType:stored.mimeType,size:stored.size,width:meta.width,height:meta.height,path:stored.path,alt:String(form.get("alt")||"").trim()||"Image du livre"});await db.insert(bookGallery).values({id:crypto.randomUUID(),bookId:id,mediaId,sortOrder:current.length+index})}return Response.json({message:`${files.length} image${files.length>1?"s":""} ajoutée${files.length>1?"s":""}.`},{status:201})}catch(error){return Response.json({message:error instanceof Error?error.message:"Import impossible."},{status:400})}}

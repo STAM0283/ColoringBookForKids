@@ -33,13 +33,13 @@ function checkEnvironment() {
   for (const name of ["DATABASE_PATH", "MEDIA_ROOT", "BACKUP_ROOT"]) {
     if (!path.isAbsolute(required(name))) throw new Error(`${name} doit être absolu.`);
   }
-  const capacity = Number(required("OVH_STORAGE_CAPACITY_BYTES"));
-  if (!Number.isSafeInteger(capacity) || capacity <= 0) throw new Error("OVH_STORAGE_CAPACITY_BYTES est invalide.");
+  const capacity = Number(process.env.STORAGE_CAPACITY_BYTES || process.env.OVH_STORAGE_CAPACITY_BYTES);
+  if (!Number.isSafeInteger(capacity) || capacity <= 0) throw new Error("STORAGE_CAPACITY_BYTES est invalide.");
 }
 
 if (require.main === module) {
   checkEnvironment();
-  console.log("Configuration OVH valide.");
+  console.log("Configuration de production valide.");
 }
 
 module.exports = { checkEnvironment };

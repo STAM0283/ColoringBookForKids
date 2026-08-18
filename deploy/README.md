@@ -22,7 +22,8 @@ Les chemins persistants recommandés sont déjà présents dans le modèle&nbsp;
 - `DATABASE_PATH=/var/www/data/database/site.db` ;
 - `MEDIA_ROOT=/var/www/data/media` ;
 - `BACKUP_ROOT=/var/www/data/backups` ;
-- `OVH_STORAGE_CAPACITY_BYTES=42949672960` pour le disque OVH de 40&nbsp;Gio.
+- `STORAGE_CAPACITY_BYTES=42949672960` pour le disque OVH de 40&nbsp;Gio ;
+- `HOSTING_PROVIDER=OVH` pour le libellé affiché dans le dashboard.
 
 Avant le premier déploiement, remplacez obligatoirement le domaine d’exemple, l’adresse administrateur, le mot de passe et `AUTH_SECRET`, puis vérifiez la configuration&nbsp;:
 

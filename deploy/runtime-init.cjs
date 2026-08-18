@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { drizzle } = require("drizzle-orm/better-sqlite3");
@@ -13,6 +14,14 @@ async function main() {
   checkEnvironment();
   const databasePath = process.env.DATABASE_PATH;
   const backupRoot = process.env.BACKUP_ROOT;
+  const bundledMigrations = path.join(__dirname, "migrations");
+  const sourceMigrations = path.resolve(__dirname, "../src/db/migrations");
+  const migrationsFolder = fs.existsSync(bundledMigrations) ? bundledMigrations : sourceMigrations;
+  if (!fs.existsSync(migrationsFolder)) throw new Error(`Migrations introuvables : ${migrationsFolder}`);
+  const migrationMarker = path.join(path.dirname(databasePath), ".migration-fingerprint");
+  const migrationFingerprint = crypto.createHash("sha256")
+    .update(fs.readdirSync(migrationsFolder).filter(file => file.endsWith(".sql")).sort().map(file => fs.readFileSync(path.join(migrationsFolder, file))).join("\n"))
+    .digest("hex");
   fs.mkdirSync(path.dirname(databasePath), { recursive: true, mode: 0o750 });
   fs.mkdirSync(backupRoot, { recursive: true, mode: 0o750 });
 
@@ -22,12 +31,14 @@ async function main() {
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("busy_timeout = 5000");
 
-  if (existed) {
+  const previousFingerprint = fs.existsSync(migrationMarker) ? fs.readFileSync(migrationMarker, "utf8").trim() : "";
+  if (existed && previousFingerprint !== migrationFingerprint) {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     await sqlite.backup(path.join(backupRoot, `pre-migration-${stamp}.db`));
   }
 
-  migrate(drizzle(sqlite), { migrationsFolder: path.join(__dirname, "migrations") });
+  migrate(drizzle(sqlite), { migrationsFolder });
+  fs.writeFileSync(migrationMarker, `${migrationFingerprint}\n`, { mode: 0o640 });
 
   const now = Math.floor(Date.now() / 1000);
   const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);

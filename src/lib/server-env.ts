@@ -46,12 +46,12 @@ export function assertProductionEnvironment() {
   }
 
   if (process.env.AUTH_TRUST_HOST !== "true") {
-    throw new Error("AUTH_TRUST_HOST doit valoir true derrière le proxy OVH.");
+    throw new Error("AUTH_TRUST_HOST doit valoir true derrière le proxy de production.");
   }
 
-  const capacity = Number(process.env.OVH_STORAGE_CAPACITY_BYTES);
+  const capacity = Number(process.env.STORAGE_CAPACITY_BYTES || process.env.OVH_STORAGE_CAPACITY_BYTES);
   if (!Number.isSafeInteger(capacity) || capacity <= 0) {
-    throw new Error("OVH_STORAGE_CAPACITY_BYTES doit contenir la capacité réelle du disque en octets.");
+    throw new Error("STORAGE_CAPACITY_BYTES doit contenir la capacité réelle du stockage en octets.");
   }
 
   const instagramUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;

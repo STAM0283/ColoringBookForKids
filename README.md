@@ -55,6 +55,12 @@ SQLite fonctionne avec WAL, clés étrangères et délai d’attente. Les listes
 
 Le répertoire de données ne doit jamais être remplacé pendant un déploiement. Les médias peuvent être servis directement par Nginx avec prise en charge des requêtes Range pour les vidéos.
 
+## Production Railway
+
+Railway utilise `Dockerfile` et `railway.toml`. Un volume persistant monté sur `/data` conserve SQLite, les images, les vidéos, les PDF et les sauvegardes entre les déploiements. Le conteneur vérifie les secrets, applique les migrations puis démarre Next.js automatiquement.
+
+Conserver une seule réplique avec SQLite. Les variables et les étapes détaillées sont documentées dans [`deploy/RAILWAY.md`](deploy/RAILWAY.md).
+
 ## Sauvegarde et restauration
 
 Le tableau de bord permet d’exporter la base SQLite et de restaurer un export valide. Une sauvegarde de sécurité est créée automatiquement avant chaque restauration. En production, planifier également une sauvegarde externe de la base **et** des médias, avec une rétention adaptée.
@@ -70,4 +76,4 @@ Une activité peut être publique ou réservée au Club. Après vérification ma
 - `src/repositories` : requêtes de lecture paginées et optimisées.
 - `src/db` : schéma, migrations et initialisation.
 - `src/lib/storage` : stockage et validation des médias.
-- `deploy` : configuration OVH/Nginx et scripts d’exploitation.
+- `deploy` : configurations Railway et OVH, migrations de production et scripts d’exploitation.

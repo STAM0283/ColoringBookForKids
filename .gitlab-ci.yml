@@ -12,7 +12,7 @@ build:
   - test -n "$ADMIN_EMAIL"
   - test -n "$ADMIN_PASSWORD"
   - export APP_ENV=production NODE_ENV=production AUTH_TRUST_HOST=true
-  - export DATABASE_PATH=/var/www/data/database/site.db MEDIA_ROOT=/var/www/data/media BACKUP_ROOT=/var/www/data/backups OVH_STORAGE_CAPACITY_BYTES=42949672960
+  - export DATABASE_PATH=/var/www/data/database/site.db MEDIA_ROOT=/var/www/data/media BACKUP_ROOT=/var/www/data/backups STORAGE_CAPACITY_BYTES=42949672960 HOSTING_PROVIDER=OVH
   - npm run env:check
   - npm run db:generate
   - npm run build

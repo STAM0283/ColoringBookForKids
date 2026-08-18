@@ -19,7 +19,8 @@ export default async function Dashboard(){
   db.select({count:sql<number>`count(*)`}).from(media).where(eq(media.type,"PDF")),
  ]);
  const counts={books:Number(bookCount.count),images:Number(imageCount.count),videos:Number(videoCount.count),pdf:Number(pdfCount.count)};
- const storageCapacity=Number(process.env.OVH_STORAGE_CAPACITY_BYTES)||40*1024**3;
+ const storageCapacity=Number(process.env.STORAGE_CAPACITY_BYTES||process.env.OVH_STORAGE_CAPACITY_BYTES)||5*1024**3;
+ const hostingProvider=process.env.HOSTING_PROVIDER?.trim()||"Serveur de production";
  const databaseIntegrity=sqlite.pragma("integrity_check",{simple:true})==="ok";
  const now=new Date(),today=parisDate(now),currentMonth=today.slice(0,7),firstDaily=parisDate(new Date(now.getTime()-6*86400000));
  const [[todayVisitors],[monthVisitors],[totalVisitors],[todayPages],dailyRows,monthlyRows]=await Promise.all([
@@ -36,7 +37,7 @@ export default async function Dashboard(){
   <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-xs font-black uppercase tracking-[.2em] text-emerald-700">Centre de pilotage</p><h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Dashboard</h1><p className="mt-2 text-slate-500">Contenus, état du système et sauvegardes réunis sur une seule page.</p></div><Link href="/" target="_blank" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border bg-white px-5 text-sm font-bold text-slate-700 shadow-sm">Voir le site <ArrowUpRight size={17}/></Link></header>
   <section className="mb-6 grid gap-4 sm:grid-cols-2"><Link href="/admin/livres" className="group flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><span className="grid size-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><BookOpen/></span><span><strong className="block">Gérer les livres</strong><small className="text-slate-500">Ajouter un livre ou modifier le catalogue</small></span><ArrowUpRight className="ml-auto text-slate-300 transition group-hover:text-emerald-600"/></Link><Link href="/admin/activites" className="group flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><span className="grid size-12 place-items-center rounded-2xl bg-blue-50 text-blue-700"><FilePlus2/></span><span><strong className="block">Ajouter une activité</strong><small className="text-slate-500">Convertir les images et publier le PDF</small></span><ArrowUpRight className="ml-auto text-slate-300 transition group-hover:text-blue-600"/></Link></section>
   <VisitorAnalytics today={Number(todayVisitors.count)} month={Number(monthVisitors.count)} total={Number(totalVisitors.count)} pageViewsToday={Number(todayPages.count)} daily={daily} monthly={monthly}/>
-  <BackupSettings sizes={sizes} counts={counts} storageCapacity={storageCapacity} databaseIntegrity={databaseIntegrity} disk={{...disk,isProduction:process.env.NODE_ENV==="production"}}/>
+  <BackupSettings sizes={sizes} counts={counts} storageCapacity={storageCapacity} databaseIntegrity={databaseIntegrity} hostingProvider={hostingProvider} disk={{...disk,isProduction:process.env.NODE_ENV==="production"}}/>
  </div>
 }
 

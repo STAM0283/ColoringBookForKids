@@ -1,89 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1786219465020,
-      "tag": "0000_green_madame_hydra",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1786284787252,
-      "tag": "0001_lumpy_sharon_carter",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1786289192585,
-      "tag": "0002_common_iron_fist",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1786314231867,
-      "tag": "0003_sweet_firelord",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1786375041115,
-      "tag": "0004_clammy_hairball",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1786401134897,
-      "tag": "0005_productive_whistler",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1786436749959,
-      "tag": "0006_special_violations",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1786444199087,
-      "tag": "0007_boring_charles_xavier",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1786480068123,
-      "tag": "0008_modern_multiple_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1786967559205,
-      "tag": "0009_sudden_bloodscream",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1786972893311,
-      "tag": "0010_dizzy_mysterio",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1786977888595,
-      "tag": "0011_hesitant_human_cannonball",
+      "version": "7",
+      "when": 1787163272416,
+      "tag": "0000_concerned_nocturne",
       "breakpoints": true
     }
   ]

@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
+import { alias } from "drizzle-orm/pg-core";
 import sharp from "sharp";
 import { z } from "zod";
 import { auth } from "@/auth";

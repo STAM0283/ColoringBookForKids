@@ -1,1 +1,0 @@
-ALTER TABLE `books` ADD `video_media_id` text REFERENCES media(id);

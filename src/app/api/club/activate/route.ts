@@ -23,8 +23,8 @@ export async function POST(request: Request) {
   const expiresAt = new Date(Date.now() + code.accessDurationMinutes * 60_000);
   try {
     await db.transaction(async transaction => {
-      const claimed = await transaction.update(clubCodes).set({ status: "REDEEMED", redeemedAt: now }).where(and(eq(clubCodes.id, code.id), eq(clubCodes.status, "ACTIVE"), gt(clubCodes.expiresAt, now)));
-      if (claimed.changes !== 1) throw new Error("CODE_ALREADY_USED");
+      const claimed = await transaction.update(clubCodes).set({ status: "REDEEMED", redeemedAt: now }).where(and(eq(clubCodes.id, code.id), eq(clubCodes.status, "ACTIVE"), gt(clubCodes.expiresAt, now))).returning({id:clubCodes.id});
+      if (claimed.length !== 1) throw new Error("CODE_ALREADY_USED");
       await transaction.insert(clubSessions).values({ id: crypto.randomUUID(), accessCodeId: code.id, tokenHash: hashClubValue(token), expiresAt });
     });
   } catch {

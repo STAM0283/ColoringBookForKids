@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, getTableColumns, inArray, like, lt, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { activities, bookGallery, books, categories, media, posts, vlogs } from "@/db/schema";
 
@@ -54,6 +54,6 @@ export const contentRepository = {
     const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(vlogs).where(where);
     return pageResult(pagination, items, Number(count));
   },
-  async activityCategoryOptions(){return db.select({name:categories.name,slug:categories.slug}).from(categories).where(sql`exists (select 1 from activity_categories ac inner join activities a on a.id=ac.activity_id where ac.category_id=${categories.id} and a.published=1)`).orderBy(asc(categories.name))},
+  async activityCategoryOptions(){return db.select({name:categories.name,slug:categories.slug}).from(categories).where(sql`exists (select 1 from activity_categories ac inner join activities a on a.id=ac.activity_id where ac.category_id=${categories.id} and a.published=true)`).orderBy(asc(categories.name))},
   async postCategoryOptions(){return db.select({name:categories.name,slug:categories.slug}).from(categories).innerJoin(posts,eq(posts.categoryId,categories.id)).where(eq(posts.published,true)).groupBy(categories.id).orderBy(asc(categories.name))},
 };

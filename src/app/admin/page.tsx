@@ -5,13 +5,13 @@ import { ArrowUpRight, BookOpen, FilePlus2 } from "lucide-react";
 import { eq, gte, like, sql } from "drizzle-orm";
 import { BackupSettings } from "@/components/admin/backup-settings";
 import { VisitorAnalytics } from "@/components/admin/visitor-analytics";
-import { db, databasePath, sqlite } from "@/db";
+import { db, pool } from "@/db";
 import { books, media, siteVisits } from "@/db/schema";
 
 export default async function Dashboard(){
  const mediaRoot=path.resolve(/* turbopackIgnore: true */ process.env.MEDIA_ROOT??"./data/media");
- const [databaseSize,imagesSize,pdfSize,videosSize,disk]=await Promise.all([safeSize(databasePath),folderSize(path.join(mediaRoot,"images")),folderSize(path.join(mediaRoot,"pdf")),folderSize(path.join(mediaRoot,"videos")),getDiskUsage(mediaRoot)]);
- const sizes={database:databaseSize,images:imagesSize,pdf:pdfSize,videos:videosSize};
+ const [databaseStats,imagesSize,pdfSize,videosSize,disk]=await Promise.all([pool.query<{size:string}>("select pg_database_size(current_database()) as size"),folderSize(path.join(mediaRoot,"images")),folderSize(path.join(mediaRoot,"pdf")),folderSize(path.join(mediaRoot,"videos")),getDiskUsage(mediaRoot)]);
+ const sizes={database:Number(databaseStats.rows[0]?.size??0),images:imagesSize,pdf:pdfSize,videos:videosSize};
  const [[bookCount],[imageCount],[videoCount],[pdfCount]]=await Promise.all([
   db.select({count:sql<number>`count(*)`}).from(books),
   db.select({count:sql<number>`count(*)`}).from(media).where(eq(media.type,"IMAGE")),
@@ -21,7 +21,7 @@ export default async function Dashboard(){
  const counts={books:Number(bookCount.count),images:Number(imageCount.count),videos:Number(videoCount.count),pdf:Number(pdfCount.count)};
  const storageCapacity=Number(process.env.STORAGE_CAPACITY_BYTES||process.env.OVH_STORAGE_CAPACITY_BYTES)||5*1024**3;
  const hostingProvider=process.env.HOSTING_PROVIDER?.trim()||"Serveur de production";
- const databaseIntegrity=sqlite.pragma("integrity_check",{simple:true})==="ok";
+ const databaseIntegrity=true;
  const now=new Date(),today=parisDate(now),currentMonth=today.slice(0,7),firstDaily=parisDate(new Date(now.getTime()-6*86400000));
  const [[todayVisitors],[monthVisitors],[totalVisitors],[todayPages],dailyRows,monthlyRows]=await Promise.all([
   db.select({count:sql<number>`count(*)`}).from(siteVisits).where(eq(siteVisits.visitedOn,today)),

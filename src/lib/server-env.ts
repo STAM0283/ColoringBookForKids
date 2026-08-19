@@ -1,5 +1,6 @@
 const insecureAuthSecrets = new Set([
   "replace-with-openssl-rand-base64-32",
+  "replace-with-openssl-rand-base64-48",
   "replace-with-a-random-production-secret",
   "development-only-club-secret",
 ]);
@@ -28,7 +29,12 @@ export function assertProductionEnvironment() {
     throw new Error("NEXT_PUBLIC_SITE_URL doit contenir le vrai domaine du site en production.");
   }
 
-  const requiredPaths = ["DATABASE_PATH", "MEDIA_ROOT", "BACKUP_ROOT"] as const;
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (!databaseUrl || !databaseUrl.startsWith("postgresql://")) {
+    throw new Error("DATABASE_URL doit être une URL PostgreSQL valide.");
+  }
+
+  const requiredPaths = ["MEDIA_ROOT", "BACKUP_ROOT"] as const;
   for (const name of requiredPaths) {
     const value = process.env[name]?.trim();
     if (!value) throw new Error(`${name} est obligatoire en production.`);

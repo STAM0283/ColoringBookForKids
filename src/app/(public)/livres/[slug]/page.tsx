@@ -1,6 +1,6 @@
 import type {Metadata} from "next";
 import {and,asc,eq} from "drizzle-orm";
-import {alias} from "drizzle-orm/sqlite-core";
+import {alias} from "drizzle-orm/pg-core";
 import {ArrowLeft,ArrowUpRight,PlayCircle} from "lucide-react";
 import Link from "next/link";
 import {notFound} from "next/navigation";

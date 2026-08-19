@@ -5,7 +5,7 @@ type Point = { label: string; visitors: number };
 
 export function VisitorAnalytics({ today, month, total, pageViewsToday, daily, monthly }: { today: number; month: number; total: number; pageViewsToday: number; daily: Point[]; monthly: Point[] }) {
   return <section className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-black uppercase tracking-[.18em] text-emerald-700">Audience du site</p><h2 className="mt-2 text-2xl font-black">Visiteurs</h2><p className="mt-1 text-sm text-slate-500">Visiteurs uniques anonymes enregistrés dans SQLite, hors robots et administration.</p></div><VisitorStatsReset/></div>
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-black uppercase tracking-[.18em] text-emerald-700">Audience du site</p><h2 className="mt-2 text-2xl font-black">Visiteurs</h2><p className="mt-1 text-sm text-slate-500">Visiteurs uniques anonymes enregistrés dans PostgreSQL, hors robots et administration.</p></div><VisitorStatsReset/></div>
     <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Metric icon={<Users/>} label="Aujourd’hui" value={today} detail="visiteurs uniques" color="emerald"/>
       <Metric icon={<CalendarDays/>} label="Ce mois" value={month} detail="visiteurs uniques" color="blue"/>

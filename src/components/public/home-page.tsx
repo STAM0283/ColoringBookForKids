@@ -18,7 +18,7 @@ export async function HomePage() {
 
   return (
     <>
-      <section className="paper-grid relative isolate overflow-hidden py-14 dark:bg-gradient-to-b dark:from-[#111a18] dark:to-background md:py-24">
+      <section id="accueil" className="paper-grid relative isolate scroll-mt-20 overflow-hidden py-14 dark:bg-gradient-to-b dark:from-[#111a18] dark:to-background md:py-24">
         <div className="pointer-events-none absolute -left-24 top-12 -z-10 size-72 rounded-full bg-amber-200/30 blur-3xl dark:bg-amber-400/10" aria-hidden="true"/>
         <div className="pointer-events-none absolute -right-20 bottom-0 -z-10 size-80 rounded-full bg-emerald-200/35 blur-3xl dark:bg-emerald-400/10" aria-hidden="true"/>
         <div className="container grid items-center gap-12 lg:grid-cols-[1.04fr_.96fr] lg:gap-16">

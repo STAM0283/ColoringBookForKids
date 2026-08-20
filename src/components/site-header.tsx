@@ -18,15 +18,14 @@ export function SiteHeader() {
   const { resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`) || (href === "/videos" && pathname.startsWith("/vlog"));
-  const scrollHomeToTop = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
   return <header className="sticky top-0 z-40 border-b bg-background/90 shadow-[0_8px_30px_-24px_rgba(15,23,42,.55)] backdrop-blur-xl">
     <div className="container flex h-20 items-center justify-between gap-3">
-      <Link href="/" scroll onClick={scrollHomeToTop} aria-label="Le Petit Crayon — Accueil" className="focus-ring shrink-0 whitespace-nowrap rounded-lg font-display text-base font-black sm:text-xl"><span className="mr-1.5 text-xl text-accent sm:mr-2 sm:text-2xl" aria-hidden="true">✿</span>Le Petit Crayon</Link>
+      <Link href="/#accueil" scroll aria-label="Le Petit Crayon — Accueil" className="focus-ring shrink-0 whitespace-nowrap rounded-lg font-display text-base font-black sm:text-xl"><span className="mr-1.5 text-xl text-accent sm:mr-2 sm:text-2xl" aria-hidden="true">✿</span>Le Petit Crayon</Link>
       <nav aria-label="Navigation principale" className="hidden items-center gap-1 lg:flex">
         {links.map(([label, href]) => {
           const active = isActive(href);
-          return <Link aria-current={active ? "page" : undefined} scroll className={cn("relative rounded-full px-3.5 py-2 text-sm font-semibold text-foreground/65 transition hover:bg-secondary/50 hover:text-foreground", active && "bg-primary text-white shadow-sm hover:bg-primary hover:text-white")} onClick={href === "/" ? scrollHomeToTop : undefined} href={href} key={href}>{label}{active && <span className="absolute -bottom-[17px] left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-primary" />}</Link>;
+          return <Link aria-current={active ? "page" : undefined} scroll className={cn("relative rounded-full px-3.5 py-2 text-sm font-semibold text-foreground/65 transition hover:bg-secondary/50 hover:text-foreground", active && "bg-primary text-white shadow-sm hover:bg-primary hover:text-white")} href={href === "/" ? "/#accueil" : href} key={href}>{label}{active && <span className="absolute -bottom-[17px] left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-primary" />}</Link>;
         })}
       </nav>
       <div className="flex items-center gap-2">
@@ -35,7 +34,7 @@ export function SiteHeader() {
         <button aria-label="Menu" aria-expanded={open} className="grid size-10 place-items-center lg:hidden" onClick={() => setOpen(!open)}>{open ? <X/> : <Menu/>}</button>
       </div>
     </div>
-    {open && <nav aria-label="Navigation mobile" className="container grid gap-2 border-t py-4 lg:hidden">{links.map(([label, href]) => { const active = isActive(href); return <Link aria-current={active ? "page" : undefined} scroll className={cn("flex items-center justify-between rounded-xl px-4 py-3 font-semibold hover:bg-secondary", active && "bg-primary text-white hover:bg-primary")} onClick={() => { setOpen(false); if (href === "/") scrollHomeToTop(); }} href={href} key={href}>{label}{active && <span className="size-2 rounded-full bg-white" />}</Link>; })}</nav>}
+    {open && <nav aria-label="Navigation mobile" className="container grid gap-2 border-t py-4 lg:hidden">{links.map(([label, href]) => { const active = isActive(href); return <Link aria-current={active ? "page" : undefined} scroll className={cn("flex items-center justify-between rounded-xl px-4 py-3 font-semibold hover:bg-secondary", active && "bg-primary text-white hover:bg-primary")} onClick={() => setOpen(false)} href={href === "/" ? "/#accueil" : href} key={href}>{label}{active && <span className="size-2 rounded-full bg-white" />}</Link>; })}</nav>}
   </header>;
 }
 

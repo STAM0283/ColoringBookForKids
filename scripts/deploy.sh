@@ -7,10 +7,9 @@ if [[ ! -f .env ]]; then echo "Configuration absente : $APP_ROOT/.env" >&2; exit
 set -a
 source .env
 set +a
-export NODE_ENV=production APP_ENV=production
-
 git pull --ff-only
-npm ci --include=dev
+NODE_ENV=development npm ci --include=dev
+export NODE_ENV=production APP_ENV=production
 npm run env:check
 npm run db:migrate
 npm run db:seed

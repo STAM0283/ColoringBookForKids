@@ -10,7 +10,7 @@ set +a
 export NODE_ENV=production APP_ENV=production
 
 git pull --ff-only
-npm ci
+npm ci --include=dev
 npm run env:check
 npm run db:migrate
 npm run db:seed

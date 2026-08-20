@@ -6,6 +6,7 @@ data/
 uploads/
 backups/
 *.sql
+!src/db/migrations/*.sql
 *.sql.gz
 *.dump
 *.pem

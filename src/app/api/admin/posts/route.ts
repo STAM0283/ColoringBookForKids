@@ -9,7 +9,7 @@ import { storageService } from "@/lib/storage/local-storage";
 import { slugify } from "@/lib/utils";
 
 const richContent=z.string().max(100000).refine(value=>richTextToPlainText(articleContentToHtml(value)).length>=20,{message:"Le contenu doit contenir au moins 20 caractères."});
-const schema=z.object({title:z.string().min(2).max(150),excerpt:z.string().min(10).max(300),content:richContent,authorName:z.string().min(2).max(100),categoryId:z.string().uuid().nullable(),published:z.boolean(),featured:z.boolean()});
+const schema=z.object({language:z.enum(["FR","EN"]),title:z.string().min(2).max(150),excerpt:z.string().min(10).max(300),content:richContent,authorName:z.string().min(2).max(100),categoryId:z.string().uuid().nullable(),published:z.boolean(),featured:z.boolean()});
 
 async function validBlogCategory(categoryId:string|null){if(!categoryId)return true;const category=await db.query.categories.findFirst({where:eq(categories.id,categoryId)});return category?.scope==="BLOG"}
 
@@ -22,7 +22,7 @@ export async function GET(){
 export async function POST(request:Request){
   if((await auth())?.user.role!=="ADMIN")return Response.json({message:"Non autorisé."},{status:401});
   const form=await request.formData();
-  const parsed=schema.safeParse({title:form.get("title"),excerpt:form.get("excerpt"),content:form.get("content"),authorName:form.get("authorName"),categoryId:String(form.get("categoryId")||"")||null,published:form.get("published")==="on",featured:form.get("featured")==="on"});
+  const parsed=schema.safeParse({language:form.get("language")==="EN"?"EN":"FR",title:form.get("title"),excerpt:form.get("excerpt"),content:form.get("content"),authorName:form.get("authorName"),categoryId:String(form.get("categoryId")||"")||null,published:form.get("published")==="on",featured:form.get("featured")==="on"});
   if(!parsed.success)return Response.json({message:parsed.error.issues[0]?.message},{status:400});
   if(!await validBlogCategory(parsed.data.categoryId))return Response.json({message:"Catégorie du blog invalide."},{status:400});
   try{

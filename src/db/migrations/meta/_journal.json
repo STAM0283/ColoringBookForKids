@@ -8,6 +8,26 @@
       "when": 1787163272416,
       "tag": "0000_concerned_nocturne",
       "breakpoints": true
-    }
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787260000000,
+      "tag": "0001_bilingual_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787560000000,
+      "tag": "0002_gallery_media",
+      "breakpoints": true
+    },
+    {"idx":3,"version":"7","when":1787565000000,"tag":"0003_media_language","breakpoints":true},
+    {"idx":4,"version":"7","when":1787652000000,"tag":"0004_characters","breakpoints":true},
+    {"idx":5,"version":"7","when":1787738400000,"tag":"0005_coloring_games","breakpoints":true},
+    {"idx":6,"version":"7","when":1787824800000,"tag":"0006_raster_coloring_games","breakpoints":true},
+    {"idx":7,"version":"7","when":1787911200000,"tag":"0007_coloring_games_timestamps","breakpoints":true},
+    {"idx":8,"version":"7","when":1787997600000,"tag":"0008_media_creative_idea","breakpoints":true}
   ]
 }

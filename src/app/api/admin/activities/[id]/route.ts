@@ -9,6 +9,7 @@ import { idList, replaceActivityCategories } from "@/lib/activity-relations";
 
 const schema = z.object({
   title: z.string().trim().min(2).max(150).optional(),
+  language: z.enum(["FR","EN"]).optional(),
   description: z.string().trim().min(10).max(5000).optional(),
   published: z.boolean().optional(),
   accessLevel: z.enum(["PUBLIC", "CLUB"]).optional(),

@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   const title = String(form.get("title") || "document").trim();
   const description = String(form.get("description") || `Activité gratuite à imprimer : ${title}.`).trim();
   const accessLevel = form.get("accessLevel") === "CLUB" ? "CLUB" : "PUBLIC";
+  const language = form.get("language") === "EN" ? "EN" : "FR";
   if (!images.length) return Response.json({ message: "Sélectionnez au moins une image." }, { status: 400 });
   if (images.length > 30) return Response.json({ message: "Le document est limité à 30 images." }, { status: 400 });
   try {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
     const mediaId = crypto.randomUUID(), previewMediaId = crypto.randomUUID(), activityId = crypto.randomUUID();
     await db.insert(media).values({ id: mediaId, type: "PDF", filename: stored.filename, originalName: filename, mimeType: "application/pdf", size: stored.size, path: stored.path, alt: title });
     await db.insert(media).values({ id: previewMediaId, type: "IMAGE", filename: previewStored.filename, originalName: previewFile.name, mimeType: previewStored.mimeType, size: previewStored.size, path: previewStored.path, alt: `Couverture de ${title}` });
-    await db.insert(activities).values({ id: activityId, title, slug: `${slugify(title) || "activite"}-${activityId.slice(0, 6)}`, description, previewMediaId, pdfMediaId: mediaId, pageCount: images.length, accessLevel, published: true, publishedAt: new Date() });
+    await db.insert(activities).values({ id: activityId, language, title, slug: `${slugify(title) || "activite"}-${activityId.slice(0, 6)}`, description, previewMediaId, pdfMediaId: mediaId, pageCount: images.length, accessLevel, published: true, publishedAt: new Date() });
     await replaceActivityCategories(activityId, idList(form.get("categoryIds")));
     return Response.json({ message: accessLevel === "CLUB" ? "PDF créé et réservé au Club Instagram." : "PDF créé et publié dans les activités gratuites.", id: activityId, filename }, { status: 201 });
   } catch (error) { return Response.json({ message: error instanceof Error ? error.message : "Conversion impossible." }, { status: 400 }); }

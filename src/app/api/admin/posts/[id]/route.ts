@@ -7,7 +7,7 @@ import { storageService } from "@/lib/storage/local-storage";
 import { articleContentToHtml, richTextToPlainText } from "@/lib/rich-text";
 
 const richContent=z.string().max(100000).refine(value=>richTextToPlainText(articleContentToHtml(value)).length>=20,{message:"Le contenu doit contenir au moins 20 caractères."});
-const schema=z.object({title:z.string().trim().min(3).max(180),excerpt:z.string().trim().min(10).max(400),content:richContent,authorName:z.string().trim().min(2).max(100),categoryId:z.string().uuid().nullable(),published:z.boolean(),featured:z.boolean()});
+const schema=z.object({language:z.enum(["FR","EN"]),title:z.string().trim().min(3).max(180),excerpt:z.string().trim().min(10).max(400),content:richContent,authorName:z.string().trim().min(2).max(100),categoryId:z.string().uuid().nullable(),published:z.boolean(),featured:z.boolean()});
 async function admin(){return(await auth())?.user.role==="ADMIN"}
 async function validBlogCategory(categoryId:string|null){if(!categoryId)return true;const category=await db.query.categories.findFirst({where:eq(categories.id,categoryId)});return category?.scope==="BLOG"}
 

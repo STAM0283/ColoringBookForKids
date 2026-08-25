@@ -7,13 +7,13 @@ import { media, vlogs } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 
 export const runtime = "nodejs";
-const updateSchema = z.object({ title: z.string().min(2).max(150), description: z.string().min(10).max(2000), categoryId: z.string().uuid().nullable(), published: z.boolean() });
+const updateSchema = z.object({ language:z.enum(["FR","EN"]).optional(),title: z.string().min(2).max(150), description: z.string().min(10).max(2000), categoryId: z.string().uuid().nullable(), published: z.boolean() });
 async function admin() { return (await auth())?.user.role === "ADMIN"; }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!await admin()) return Response.json({ message: "Non autorisé." }, { status: 401 });
   const form = await request.formData();
-  const parsed = updateSchema.safeParse({ title: form.get("title"), description: form.get("description"), categoryId: String(form.get("categoryId") || "") || null, published: form.get("published") === "true" });
+  const parsed = updateSchema.safeParse({ language:form.has("language")?(form.get("language")==="EN"?"EN":"FR"):undefined,title: form.get("title"), description: form.get("description"), categoryId: String(form.get("categoryId") || "") || null, published: form.get("published") === "true" });
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message }, { status: 400 });
   const { id } = await params;
   const current = await db.query.vlogs.findFirst({ where: eq(vlogs.id, id) });
@@ -27,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       await storageService.validateFile(thumbnail, "IMAGE");
       const metadata = await sharp(Buffer.from(await thumbnail.arrayBuffer())).metadata();
       const stored = await storageService.uploadFile(thumbnail, "IMAGE");
-      createdMedia = { id: crypto.randomUUID(), type: "IMAGE", filename: stored.filename, originalName: thumbnail.name, mimeType: stored.mimeType, size: stored.size, width: metadata.width ?? null, height: metadata.height ?? null, duration: null, path: stored.path, alt: `Miniature de ${parsed.data.title}`, createdAt: new Date(), updatedAt: new Date() };
+      createdMedia = { id: crypto.randomUUID(), type: "IMAGE", filename: stored.filename, originalName: thumbnail.name, mimeType: stored.mimeType, size: stored.size, width: metadata.width ?? null, height: metadata.height ?? null, duration: null, path: stored.path, alt: `Miniature de ${parsed.data.title}`, creativeIdea:null, language: parsed.data.language ?? current.language, galleryEnabled: false, published: false, accessLevel: "PUBLIC", createdAt: new Date(), updatedAt: new Date() };
       await db.insert(media).values(createdMedia);
       thumbnailMediaId = createdMedia.id;
     }

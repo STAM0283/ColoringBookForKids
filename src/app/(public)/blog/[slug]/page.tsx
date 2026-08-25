@@ -12,7 +12,7 @@ import { jsonLd, mediaUrl, SITE_NAME, siteUrl } from "@/lib/seo";
 async function getPost(slug: string) {
   const [result] = await db.select({ post: posts, cover: media }).from(posts)
     .leftJoin(media, eq(posts.coverMediaId, media.id))
-    .where(and(eq(posts.slug, slug), eq(posts.published, true))).limit(1);
+    .where(and(eq(posts.slug, slug), eq(posts.language,"FR"),eq(posts.published, true))).limit(1);
   return result;
 }
 

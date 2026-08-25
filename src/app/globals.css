@@ -181,7 +181,8 @@ div.grid.max-w-3xl.xl\:grid-cols-4 {
 
   /* Les actions placées à droite gardent leur bulle dans la carte. */
   button[aria-label*="description"]::after,
-  button[aria-label*="galerie"]::after {
+  button[aria-label*="galerie"]::after,
+  .tooltip-align-right::after {
     top: auto !important;
     bottom: calc(100% + 10px) !important;
     right: -8px !important;
@@ -194,7 +195,8 @@ div.grid.max-w-3xl.xl\:grid-cols-4 {
   }
 
   button[aria-label*="description"]::before,
-  button[aria-label*="galerie"]::before {
+  button[aria-label*="galerie"]::before,
+  .tooltip-align-right::before {
     top: auto !important;
     bottom: calc(100% + 6px) !important;
     right: 15px !important;
@@ -203,12 +205,14 @@ div.grid.max-w-3xl.xl\:grid-cols-4 {
   }
 
   button[aria-label*="description"]:is(:hover, :focus-visible)::after,
-  button[aria-label*="galerie"]:is(:hover, :focus-visible)::after {
+  button[aria-label*="galerie"]:is(:hover, :focus-visible)::after,
+  .tooltip-align-right:is(:hover, :focus-visible)::after {
     transform: translateY(0) scale(1) !important;
   }
 
   button[aria-label*="description"]:is(:hover, :focus-visible)::before,
-  button[aria-label*="galerie"]:is(:hover, :focus-visible)::before {
+  button[aria-label*="galerie"]:is(:hover, :focus-visible)::before,
+  .tooltip-align-right:is(:hover, :focus-visible)::before {
     transform: translateY(0) rotate(45deg) !important;
   }
 

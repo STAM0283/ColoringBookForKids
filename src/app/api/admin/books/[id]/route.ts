@@ -7,6 +7,7 @@ import { books, media } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 
 const updateSchema = z.object({
+  language: z.enum(["FR","EN"]),
   title: z.string().trim().min(2).max(150), shortDescription: z.string().trim().min(10).max(300), description: z.string().trim().min(10),
   categoryId: z.string().uuid().nullable(), ageMin: z.number().int().min(0).max(18), ageMax: z.number().int().min(0).max(18),
   pageCount: z.number().int().min(1).max(1000), amazonUrl: z.union([z.literal(""), z.string().url()]), pricingType: z.enum(["FREE", "PAID"]),
@@ -22,13 +23,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const isMultipart = request.headers.get("content-type")?.includes("multipart/form-data");
   const form = isMultipart ? await request.formData() : null;
   const body = form ? {
-    title: form.get("title"), shortDescription: form.get("shortDescription"), description: form.get("description"),
+    language: form.get("language") === "EN" ? "EN" : "FR", title: form.get("title"), shortDescription: form.get("shortDescription"), description: form.get("description"),
     categoryId: form.get("categoryId") || null, ageMin: Number(form.get("ageMin")), ageMax: Number(form.get("ageMax")),
     pageCount: Number(form.get("pageCount")), amazonUrl: form.get("amazonUrl") || "", pricingType: form.get("pricingType"),
     priceCents: form.get("pricingType") === "FREE" || !form.get("price") ? null : Math.round(Number(form.get("price")) * 100),
     published: form.get("published") === "true", featured: current.featured,
   } : await request.json();
-  const parsed = updateSchema.safeParse({ ...body, featured: body.featured ?? current.featured });
+  const parsed = updateSchema.safeParse({ ...body, language:body.language??current.language, featured: body.featured ?? current.featured });
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message }, { status: 400 });
   const value = parsed.data, hasNewPrice = value.pricingType === "PAID" && value.priceCents && (value.priceCents !== current.priceCents || current.pricingType !== "PAID");
   let newCover: { id: string; path: string } | null = null;

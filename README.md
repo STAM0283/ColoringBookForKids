@@ -327,3 +327,16 @@ Testez également la connexion administrateur, la création et la modification d
 - Les uploads sont vérifiés par signature MIME, limités en taille, renommés par UUID et protégés contre les traversées de chemin.
 - PostgreSQL conserve uniquement les métadonnées des médias, jamais les gros fichiers.
 - `/api/health` vérifie PostgreSQL et le stockage sans exposer de secret.
+# Gestion bilingue français / anglais
+
+Le site public utilise le français comme langue principale (`/`) et l’anglais sous le préfixe `/en`. Le sélecteur de langue conserve la page équivalente lorsque celle-ci existe. Les anciennes URL françaises restent donc compatibles.
+
+Les livres, activités, articles, vidéos et catégories possèdent un champ PostgreSQL `language` (`FR` ou `EN`). Les contenus existants sont automatiquement conservés en français par la migration `0001_bilingual_content.sql`. Dans l’administration, sélectionner la langue au moment de créer le contenu ; un contenu anglais n’apparaît que dans les pages anglaises.
+
+Après récupération d’une version contenant une nouvelle migration, le déploiement doit exécuter :
+
+```bash
+npm run db:migrate
+```
+
+Le sitemap contient les routes des deux langues et les principales pages déclarent leurs alternatives `fr`/`en`. Avant de publier un contenu anglais, traduire manuellement le titre, la description, le contenu et les métadonnées SEO ; ne pas publier de traduction automatique non relue.

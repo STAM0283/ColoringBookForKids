@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CheckCircle2, Clock3, Film, ImageIcon, LoaderCircle, Plus, Sparkles, Tags, UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AdminSelect } from "./admin-select";
+import { AdminFormField } from "./admin-form-field";
 
 export function VideoCreateManager({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -48,6 +49,7 @@ function CreateVideoDialog({ close }: { close: () => void }) {
 
       <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[1fr_.95fr]">
         <div className="space-y-5">
+          <Field label="Langue"><select name="language" defaultValue="FR" className={input}><option value="FR">🇫🇷 Français</option><option value="EN">🇬🇧 Anglais</option></select></Field>
           <Field label="Titre"><input name="title" required minLength={2} maxLength={150} autoFocus placeholder="Ex. Dessinons un petit renard" className={input}/></Field>
           <Field label="Description"><textarea name="description" required minLength={10} maxLength={2000} placeholder="Présentez le contenu de la vidéo…" className={`${input} min-h-32 resize-y py-3 leading-relaxed`}/></Field>
           <AdminSelect label="Catégorie" icon={<Tags size={18}/>} value={categoryId} options={[{value:"",label:"Sans catégorie"},...categories.map(category=>({value:category.id,label:category.name}))]} onChange={setCategoryId}/>
@@ -73,7 +75,7 @@ function CreateVideoDialog({ close }: { close: () => void }) {
   </div>;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block text-sm font-black text-slate-800">{label}{children}</label>; }
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <AdminFormField label={label}>{children}</AdminFormField>; }
 const input = "mt-2.5 min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 font-semibold text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100";
 function Switch({ checked }: { checked: boolean }) { return <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? "bg-emerald-600" : "bg-slate-300"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition ${checked ? "left-6" : "left-1"}`}/></span>; }
 function FilePreview({ title, hint, selected, icon, children }: { title: string; hint: string; selected?: string; icon: React.ReactNode; children: React.ReactNode }) { const hasPreview=Boolean(selected); return <label className="group block cursor-pointer"><span className="mb-2 flex items-center justify-between gap-3 text-sm font-black text-slate-800"><span>{title}</span>{selected&&<span className="max-w-56 truncate text-xs font-semibold text-emerald-700">{selected}</span>}</span><span className="relative grid aspect-video w-full place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-950 transition group-hover:border-emerald-500">{children}{!hasPreview&&<span className="z-10 text-center text-white"><span className="mx-auto grid size-14 place-items-center rounded-2xl bg-white/10">{icon}</span><span className="mt-3 block font-black">Choisir un fichier</span><span className="mt-1 block text-xs text-white/55">{hint}</span></span>}{hasPreview&&<span className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-2 rounded-full bg-black/65 px-3 py-2 text-xs font-black text-white backdrop-blur"><UploadCloud size={14}/>Remplacer</span>}</span></label>; }

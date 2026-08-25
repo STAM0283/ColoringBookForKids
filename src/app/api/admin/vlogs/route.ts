@@ -11,6 +11,7 @@ import { slugify } from "@/lib/utils";
 export const runtime = "nodejs";
 
 const schema = z.object({
+  language: z.enum(["FR","EN"]),
   title: z.string().min(2).max(150),
   description: z.string().min(10).max(2000),
   duration: z.coerce.number().int().min(0).max(86400),
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
   const video = form.get("video");
   const thumbnail = form.get("thumbnail");
   const parsed = schema.safeParse({
+    language: form.get("language") === "EN" ? "EN" : "FR",
     title: form.get("title"),
     description: form.get("description"),
     duration: form.get("duration") || 0,
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
 
     const id = crypto.randomUUID();
     const slug = `${slugify(parsed.data.title)}-${id.slice(0, 6)}`;
-    await db.insert(vlogs).values({ id, slug, title: parsed.data.title, description: parsed.data.description, categoryId: parsed.data.categoryId, duration: parsed.data.duration, featured: parsed.data.featured, published: parsed.data.published, videoMediaId: videoId, thumbnailMediaId: thumbnailId, publishedAt: parsed.data.published ? new Date() : null });
+    await db.insert(vlogs).values({ id, slug, language:parsed.data.language, title: parsed.data.title, description: parsed.data.description, categoryId: parsed.data.categoryId, duration: parsed.data.duration, featured: parsed.data.featured, published: parsed.data.published, videoMediaId: videoId, thumbnailMediaId: thumbnailId, publishedAt: parsed.data.published ? new Date() : null });
     return Response.json({ id, slug }, { status: 201 });
   } catch (error) {
     return Response.json({ message: error instanceof Error ? error.message : "Création impossible." }, { status: 400 });

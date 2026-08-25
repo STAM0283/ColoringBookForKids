@@ -10,6 +10,7 @@ import { slugify } from "@/lib/utils";
 export const runtime = "nodejs";
 
 const schema = z.object({
+  language: z.enum(["FR", "EN"]),
   title: z.string().min(2).max(150),
   shortDescription: z.string().min(10).max(300),
   description: z.string().min(10).max(100000),
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
   const galleryFiles = form.getAll("gallery").filter((value): value is File => value instanceof File && value.size > 0);
   if (galleryFiles.length > 12) return Response.json({ message: "La galerie est limitée à 12 images." }, { status: 400 });
   const parsed = schema.safeParse({
-    title: form.get("title"), shortDescription: form.get("shortDescription"), description: form.get("description"),
+    language: form.get("language") === "EN" ? "EN" : "FR", title: form.get("title"), shortDescription: form.get("shortDescription"), description: form.get("description"),
     ageMin: form.get("ageMin"), ageMax: form.get("ageMax"), pageCount: form.get("pageCount"), amazonUrl: form.get("amazonUrl") || "",
     categoryId: form.get("categoryId") || null, pricingType: form.get("pricingType") === "FREE" ? "FREE" : "PAID",
     priceCents: form.get("pricingType") === "FREE" || !form.get("price") ? null : Math.round(Number(form.get("price")) * 100),
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
 
     const id = crypto.randomUUID();
     const slug = `${slugify(parsed.data.title)}-${id.slice(0, 6)}`;
-    await db.insert(books).values({ id, slug, title: parsed.data.title, shortDescription: parsed.data.shortDescription, description: parsed.data.description, categoryId: parsed.data.categoryId, ageMin: parsed.data.ageMin, ageMax: parsed.data.ageMax, pageCount: parsed.data.pageCount, amazonUrl: parsed.data.amazonUrl || null, pricingType: parsed.data.pricingType, priceCents: parsed.data.pricingType === "PAID" ? parsed.data.priceCents : null, priceUpdatedAt: parsed.data.pricingType === "PAID" && parsed.data.priceCents ? new Date() : null, featured: parsed.data.featured, published: parsed.data.published, coverMediaId, videoMediaId, publishedAt: parsed.data.published ? new Date() : null });
+    await db.insert(books).values({ id, slug, language:parsed.data.language, title: parsed.data.title, shortDescription: parsed.data.shortDescription, description: parsed.data.description, categoryId: parsed.data.categoryId, ageMin: parsed.data.ageMin, ageMax: parsed.data.ageMax, pageCount: parsed.data.pageCount, amazonUrl: parsed.data.amazonUrl || null, pricingType: parsed.data.pricingType, priceCents: parsed.data.pricingType === "PAID" ? parsed.data.priceCents : null, priceUpdatedAt: parsed.data.pricingType === "PAID" && parsed.data.priceCents ? new Date() : null, featured: parsed.data.featured, published: parsed.data.published, coverMediaId, videoMediaId, publishedAt: parsed.data.published ? new Date() : null });
 
     for (const [sortOrder, image] of galleryFiles.entries()) {
       await storageService.validateFile(image, "IMAGE");

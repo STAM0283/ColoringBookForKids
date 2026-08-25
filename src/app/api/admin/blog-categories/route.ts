@@ -19,14 +19,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if ((await auth())?.user.role !== "ADMIN") return Response.json({ message: "Non autorisé." }, { status: 401 });
-  const body = await request.json().catch(() => null) as { name?: string; description?: string; color?: string; badge?: string } | null;
+  const body = await request.json().catch(() => null) as { language?: "FR" | "EN"; name?: string; description?: string; color?: string; badge?: string } | null;
   const name = body?.name?.trim(), color = body?.color?.toUpperCase() || "#D97706", badge = body?.badge?.trim() || "✏️";
   if (!name || name.length < 2 || name.length > 60) return Response.json({ message: "Le nom doit contenir entre 2 et 60 caractères." }, { status: 400 });
   if (!colorPattern.test(color)) return Response.json({ message: "Couleur invalide." }, { status: 400 });
   if (badge.length > 12) return Response.json({ message: "Le badge est trop long." }, { status: 400 });
   const id = crypto.randomUUID();
   try {
-    await db.insert(categories).values({ id, scope: "BLOG", name, slug: slugify(name), description: body?.description?.trim() || null, color, badge });
+    await db.insert(categories).values({ id, scope: "BLOG", language: body?.language === "EN" ? "EN" : "FR", name, slug: slugify(name), description: body?.description?.trim() || null, color, badge });
     return Response.json({ message: "Catégorie du blog créée avec succès.", id }, { status: 201 });
   } catch {
     return Response.json({ message: "Cette catégorie existe déjà." }, { status: 409 });

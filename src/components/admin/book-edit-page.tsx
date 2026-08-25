@@ -3,14 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, BookOpen, CheckCircle2, ImagePlus, LoaderCircle, Save } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, ImagePlus, Languages, LoaderCircle, Save, ShieldCheck, Sparkles } from "lucide-react";
 import { htmlToMarkdown } from "@/lib/rich-text";
 import { BookGallery, BookVideoManager } from "./book-management-list";
 import { MarkdownEditor } from "./markdown-editor";
 import { AdminSelect } from "./admin-select";
+import { AdminFormField } from "./admin-form-field";
 
 type Book = {
-  id: string; title: string; shortDescription: string; description: string; categoryId: string | null;
+  id: string; language: "FR" | "EN"; title: string; shortDescription: string; description: string; categoryId: string | null;
   ageMin: number; ageMax: number; pageCount: number; amazonUrl: string | null; pricingType: "FREE" | "PAID";
   priceCents: number | null; featured: boolean; published: boolean;
 };
@@ -25,6 +26,7 @@ export function BookEditPage({ bookId }: { bookId: string }) {
   const [description, setDescription] = useState("");
   const [pricing, setPricing] = useState<"FREE" | "PAID">("PAID");
   const [categoryId, setCategoryId] = useState("");
+  const [language, setLanguage] = useState<"FR" | "EN">("FR");
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export function BookEditPage({ bookId }: { bookId: string }) {
     ]).then(([bookData, categoryData]: [{ items?: Row[] }, { items?: Category[] }]) => {
       const found = bookData.items?.find(item => item.book.id === bookId) ?? null;
       setRow(found); setCategories(categoryData.items ?? []);
-      if (found) { setDescription(htmlToMarkdown(found.book.description)); setPricing(found.book.pricingType); setCategoryId(found.book.categoryId ?? ""); }
+      if (found) { setDescription(htmlToMarkdown(found.book.description)); setPricing(found.book.pricingType); setCategoryId(found.book.categoryId ?? ""); setLanguage(found.book.language); }
     }).catch(() => setMessage({ ok: false, text: "Impossible de charger ce livre." })).finally(() => setLoading(false));
   }, [bookId]);
 
@@ -66,16 +68,17 @@ export function BookEditPage({ bookId }: { bookId: string }) {
   const displayedCover = coverPreview ?? (row.cover ? `/media/${row.cover.path}` : null);
 
   return <div className="mx-auto max-w-6xl pb-12">
-    <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-      <Link href="/admin/livres" className="inline-flex min-h-11 items-center gap-2 rounded-xl border bg-white px-4 font-bold text-slate-600 shadow-sm transition hover:-translate-x-1 hover:text-emerald-700"><ArrowLeft size={18}/>Retour à la liste</Link>
-      <p className="text-sm font-semibold text-slate-400">Les médias déjà liés sont conservés.</p>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <Link href="/admin/livres" className="group inline-flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 font-black text-slate-700 shadow-sm transition hover:-translate-x-1 hover:border-emerald-300 hover:text-emerald-700 hover:shadow-md"><span className="grid size-8 place-items-center rounded-xl bg-slate-100 transition group-hover:bg-emerald-50"><ArrowLeft size={17}/></span>Retour à la liste</Link>
+      <p className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-800"><ShieldCheck size={16}/>Les médias liés sont conservés</p>
     </div>
-    <header className="mb-7 flex items-center gap-4"><span className="grid size-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><BookOpen/></span><div><p className="text-xs font-black uppercase tracking-[.18em] text-emerald-700">Catalogue</p><h1 className="text-3xl font-black tracking-tight text-slate-950">Modifier le livre</h1><p className="mt-1 text-slate-500">Mettez à jour sa fiche, sa couverture et ses contenus associés.</p></div></header>
+    <header className="relative mb-7 overflow-hidden rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-[#103f35] via-[#17624f] to-[#2f8069] p-6 text-white shadow-xl sm:p-8"><span className="pointer-events-none absolute -right-12 -top-16 size-48 rounded-full bg-white/10 blur-2xl"/><span className="pointer-events-none absolute bottom-0 right-28 size-24 rounded-full bg-amber-300/15 blur-xl"/><div className="relative flex items-center gap-5"><span className="grid size-16 shrink-0 place-items-center rounded-[1.35rem] border border-white/20 bg-white/15 text-emerald-50 shadow-inner backdrop-blur"><BookOpen size={29}/></span><div><p className="flex items-center gap-2 text-xs font-black uppercase tracking-[.2em] text-emerald-100"><Sparkles size={14}/>Catalogue</p><h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">Modifier le livre</h1><p className="mt-2 max-w-2xl text-sm leading-relaxed text-emerald-50/75 sm:text-base">Mettez à jour sa fiche, sa couverture et ses contenus associés dans un espace unique.</p></div></div></header>
 
-    <form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
+    <form onSubmit={submit} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_-45px_rgba(15,23,42,.45)] md:p-8">
+      <div className="mb-7 flex items-center justify-between gap-4 border-b border-slate-100 pb-5"><div><p className="text-[10px] font-black uppercase tracking-[.18em] text-emerald-700">Informations principales</p><h2 className="mt-1 text-xl font-black text-slate-950">Identité du livre</h2></div><span className={`rounded-full px-3 py-1.5 text-xs font-black ${language==="EN"?"bg-blue-50 text-blue-700":"bg-violet-50 text-violet-700"}`}>{language==="EN"?"🇬🇧 Version anglaise":"🇫🇷 Version française"}</span></div>
       <div className="grid gap-8 lg:grid-cols-[1fr_310px]">
         <div className="grid gap-5">
-          <Field label="Titre"><input className={input} name="title" required minLength={2} defaultValue={book.title}/></Field>
+          <div className="grid gap-4 sm:grid-cols-[240px_1fr]"><div><input type="hidden" name="language" value={language}/><AdminSelect label="Langue du livre" icon={<Languages size={18}/>} value={language} options={[{value:"FR",label:"🇫🇷 Français"},{value:"EN",label:"🇬🇧 Anglais"}]} onChange={value=>setLanguage(value as "FR"|"EN")}/></div><Field label="Titre"><input className={input} name="title" required minLength={2} maxLength={150} defaultValue={book.title}/></Field></div>
           <Field label="Résumé court"><textarea className={`${input} min-h-24 py-3`} name="shortDescription" required minLength={10} maxLength={300} defaultValue={book.shortDescription}/></Field>
           <MarkdownEditor name="description" value={description} onChange={setDescription}/>
         </div>
@@ -104,4 +107,4 @@ export function BookEditPage({ bookId }: { bookId: string }) {
   </div>;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block text-sm font-bold text-slate-700">{label}{children}</label>; }
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <AdminFormField label={label}>{children}</AdminFormField>; }

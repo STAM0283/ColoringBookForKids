@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {usePathname} from "next/navigation";
 import {BookOpen,ChevronDown,FileDown,Heart,Home,Images as ImagesIcon,Instagram,Menu,Moon,Newspaper,Palette,Sun,Video,X} from "lucide-react";
 import {useEffect,useRef,useState} from "react";
@@ -27,9 +28,9 @@ export function SiteHeader() {
   useEffect(()=>{setOpen(false);setMobileGalleryOpen(false)},[pathname]);
   useEffect(()=>{if(!open)return;const previous=document.body.style.overflow;document.body.style.overflow="hidden";function closeOnEscape(event:KeyboardEvent){if(event.key==="Escape")setOpen(false)}document.addEventListener("keydown",closeOnEscape);return()=>{document.body.style.overflow=previous;document.removeEventListener("keydown",closeOnEscape)}},[open]);
 
-  return <header className="sticky top-0 z-40 border-b bg-background/90 shadow-[0_8px_30px_-24px_rgba(15,23,42,.55)] backdrop-blur-xl">
-    <div className="container flex h-16 items-center justify-between gap-3 sm:h-20">
-      <Link href={`${homePath}#accueil`} scroll aria-label={`Le Petit Crayon — ${copy.navigation.home}`} className="focus-ring shrink-0 whitespace-nowrap rounded-lg font-display text-base font-black sm:text-xl"><span className="mr-1.5 text-xl text-accent sm:mr-2 sm:text-2xl" aria-hidden="true">✿</span>Le Petit Crayon</Link>
+  return <header className="sticky left-0 top-0 z-40 w-full max-w-full overflow-x-clip border-b bg-background/90 shadow-[0_8px_30px_-24px_rgba(15,23,42,.55)] backdrop-blur-xl">
+    <div className="container flex h-16 w-full min-w-0 max-w-full items-center justify-between gap-2 sm:h-20 sm:gap-3">
+      <Link href={`${homePath}#accueil`} scroll aria-label={`Le Petit Crayon — ${copy.navigation.home}`} className="focus-ring inline-flex min-w-0 items-center gap-2 truncate rounded-lg font-display text-sm font-black min-[360px]:text-base sm:gap-2.5 sm:text-xl"><Image src="/images/le-petit-crayon-mark.png" alt="" width={28} height={40} priority className="h-8 w-auto shrink-0 object-contain drop-shadow-sm sm:h-11"/>Le Petit Crayon</Link>
       <nav aria-label={locale==="en"?"Main navigation":"Navigation principale"} className="hidden items-center gap-1 lg:flex">
         {navigation.map(item=>item==="gallery"?<div key={item} ref={galleryMenu} className="relative">
           <button type="button" aria-expanded={galleryOpen} aria-haspopup="menu" onClick={()=>setGalleryOpen(value=>!value)} onKeyDown={event=>{if(event.key==="Escape")setGalleryOpen(false)}} className={navClass(galleryActive)}>{galleryLabel}<ChevronDown size={15} className={`transition ${galleryOpen?"rotate-180":""}`}/></button>

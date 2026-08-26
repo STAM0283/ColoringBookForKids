@@ -1,4 +1,4 @@
-import { db, pool } from "./index";
+import { db, pool } from "./client";
 import { activities, books, categories, posts, vlogs } from "./schema";
 if(process.env.NODE_ENV==="production"||process.env.ALLOW_DEMO_SEED!=="true")throw new Error("Seed de démonstration bloqué. Utilisez ALLOW_DEMO_SEED=true uniquement en local.");
 const now=new Date(),id=(prefix:string,index:number)=>`demo-${prefix}-${String(index).padStart(3,"0")}`;

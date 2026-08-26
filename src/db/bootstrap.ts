@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { db, pool } from "./index";
+import { db, pool } from "./client";
 import { settings, users } from "./schema";
 async function bootstrap(){const email=process.env.ADMIN_EMAIL?.trim().toLowerCase(),password=process.env.ADMIN_PASSWORD;if(!email)throw new Error("ADMIN_EMAIL est obligatoire.");if(!password||password.length<12)throw new Error("ADMIN_PASSWORD doit contenir au moins 12 caractères.");await db.insert(users).values({id:"user-admin",name:"Administrateur",email,passwordHash:await bcrypt.hash(password,12),role:"ADMIN"}).onConflictDoNothing();const values:{key:string;value:string;type:"STRING"|"NUMBER"|"BOOLEAN"|"JSON"}[]=[{key:"site.name",value:"Le Petit Crayon",type:"STRING"},{key:"pagination.books",value:"12",type:"NUMBER"},{key:"pagination.activities",value:"24",type:"NUMBER"},{key:"pagination.blog",value:"10",type:"NUMBER"},{key:"pagination.admin",value:"20",type:"NUMBER"},{key:"pagination.media",value:"30",type:"NUMBER"}];await db.insert(settings).values(values).onConflictDoNothing();await db.update(settings).set({value:"Le Petit Crayon"}).where(eq(settings.key,"site.name"));console.log(`Initialisation terminée. Administrateur : ${email}. Aucun contenu de démonstration ajouté.`)}
 bootstrap().then(()=>pool.end()).catch(async error=>{console.error(error instanceof Error?error.message:error);await pool.end().catch(()=>undefined);process.exit(1)});

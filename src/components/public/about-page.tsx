@@ -78,12 +78,13 @@ export function AboutPage({ locale }: { locale: Locale }) {
     </section>
 
     <section className="container pb-16 sm:pb-24">
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-primary px-6 py-12 text-center text-white shadow-2xl shadow-primary/20 sm:px-12 sm:py-16">
-        <Heart className="absolute -left-4 -top-5 size-28 -rotate-[18deg] text-white/10" fill="currentColor" aria-hidden="true"/>
-        <Sparkles className="absolute -bottom-5 -right-3 size-28 rotate-12 text-white/10" aria-hidden="true"/>
-        <p className="text-sm font-black uppercase tracking-[.22em] text-white/70">{en ? "Our wish" : "Notre souhait"}</p>
-        <blockquote className="mx-auto mt-5 max-w-4xl text-balance font-display text-3xl font-black leading-tight sm:text-4xl">{en ? "“To give every child the desire to pick up their crayons and the freedom to imagine what comes next.”" : "« Donner à chaque enfant l’envie de prendre ses crayons et la liberté d’inventer la suite. »"}</blockquote>
-        <Link href={localizedPath("books", locale)} className="focus-ring mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 font-black text-primary shadow-lg transition hover:-translate-y-0.5 hover:bg-amber-50">{en ? "Enter our world" : "Entrer dans l’univers"} <ArrowRight size={18}/></Link>
+      <div className="relative overflow-hidden rounded-[2.5rem] border border-transparent bg-primary px-6 py-12 text-center text-white shadow-2xl shadow-primary/20 transition-colors dark:border-emerald-300/15 dark:bg-gradient-to-br dark:from-[#173f35] dark:via-[#12382f] dark:to-[#0d2b25] dark:shadow-[0_28px_70px_-35px_rgba(52,211,153,.35)] sm:px-12 sm:py-16">
+        <div aria-hidden="true" className="absolute inset-0 hidden bg-[radial-gradient(circle_at_50%_0%,rgba(110,231,183,.13),transparent_48%)] dark:block"/>
+        <Heart className="absolute -left-4 -top-5 size-28 -rotate-[18deg] text-white/10 dark:text-emerald-200/[.07]" fill="currentColor" aria-hidden="true"/>
+        <Sparkles className="absolute -bottom-5 -right-3 size-28 rotate-12 text-white/10 dark:text-emerald-200/[.08]" aria-hidden="true"/>
+        <p className="relative text-sm font-black uppercase tracking-[.22em] text-white/70 dark:text-emerald-100/75">{en ? "Our wish" : "Notre souhait"}</p>
+        <blockquote className="relative mx-auto mt-5 max-w-4xl text-balance font-display text-3xl font-black leading-tight text-white sm:text-4xl">{en ? "“To give every child the desire to pick up their crayons and the freedom to imagine what comes next.”" : "« Donner à chaque enfant l’envie de prendre ses crayons et la liberté d’inventer la suite. »"}</blockquote>
+        <Link href={localizedPath("books", locale)} className="focus-ring group relative mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 font-black text-primary shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-amber-50 hover:shadow-xl dark:border dark:border-emerald-300/25 dark:bg-emerald-700 dark:text-white dark:shadow-[0_12px_30px_-12px_rgba(16,185,129,.7)] dark:hover:border-emerald-200/40 dark:hover:bg-emerald-600"><span>{en ? "Enter our world" : "Entrer dans l’univers"}</span> <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1"/></Link>
       </div>
     </section>
   </div>;

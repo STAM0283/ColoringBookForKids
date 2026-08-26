@@ -23,8 +23,8 @@ export function BackupSettings({ sizes, counts, storageCapacity, databaseIntegri
       </div>
     </section>
 
-    <section className="rounded-[1.75rem] border border-blue-200 bg-blue-50 p-7">
-      <div className="flex gap-4"><span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-blue-100 text-blue-700"><ServerCog/></span><div><h2 className="text-xl font-black text-blue-950">Sauvegardes administrées sur le VPS</h2><p className="mt-2 text-sm leading-relaxed text-blue-900/75">PostgreSQL et les fichiers sont sauvegardés séparément avec les scripts sécurisés du serveur. Utilisez <code>scripts/backup-db.sh</code> et <code>scripts/backup-uploads.sh</code>, puis copiez les archives vers un stockage externe chiffré. Une restauration de production n’est volontairement pas proposée depuis le navigateur.</p></div></div>
+    <section className="rounded-[1.75rem] border border-blue-200 bg-blue-50 p-7 shadow-sm dark:border-blue-300/20 dark:bg-gradient-to-br dark:from-blue-950/35 dark:via-slate-900/70 dark:to-slate-900/70">
+      <div className="flex gap-4"><span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 dark:ring-1 dark:ring-blue-300/15"><ServerCog/></span><div><h2 className="text-xl font-black text-blue-950 dark:text-slate-50">Sauvegardes administrées sur le VPS</h2><p className="mt-2 text-sm leading-relaxed text-blue-900/75 dark:text-slate-300">PostgreSQL et les fichiers sont sauvegardés séparément avec les scripts sécurisés du serveur. Utilisez <code className="font-bold text-blue-800 dark:text-blue-200">scripts/backup-db.sh</code> et <code className="font-bold text-blue-800 dark:text-blue-200">scripts/backup-uploads.sh</code>, puis copiez les archives vers un stockage externe chiffré. Une restauration de production n’est volontairement pas proposée depuis le navigateur.</p></div></div>
     </section>
   </div>;
 }

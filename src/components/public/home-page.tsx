@@ -32,8 +32,8 @@ export async function HomePage({locale="fr"}:{locale?:Locale}) {
               {en?"Little crayons.":"De petits crayons."}<br />
               <span className="relative text-primary">{en?"Big stories.":"De grandes histoires."}<span className="absolute -bottom-2 left-0 h-2 w-full rounded-full bg-amber-300/50 dark:bg-amber-300/25" aria-hidden="true"/></span>
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-foreground/65">
-              {en?<>Heartwarming coloring books and free activities to help children <strong className="font-black text-foreground/85">grow, dream and create</strong> at their own pace.</>:<>Des livres de coloriage pleins de tendresse et des activités gratuites pour <strong className="font-black text-foreground/85">grandir, rêver et créer</strong> à son rythme.</>}
+            <p className="mt-7 max-w-xl text-lg leading-8 text-foreground/65 dark:text-slate-300">
+              {en?<>Heartwarming coloring books and free activities to help children <strong className="font-black text-foreground/85 dark:text-slate-100">grow, dream and create</strong> at their own pace.</>:<>Des livres de coloriage pleins de tendresse et des activités gratuites pour <strong className="font-black text-foreground/85 dark:text-slate-100">grandir, rêver et créer</strong> à son rythme.</>}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={localizedPath("books",locale)} className="focus-ring group inline-flex min-h-14 items-center gap-2 rounded-full bg-primary px-7 font-black text-white shadow-lg shadow-primary/20 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -110,7 +110,7 @@ export async function HomePage({locale="fr"}:{locale?:Locale}) {
           <p className="mx-auto grid size-20 place-items-center rounded-[1.75rem] border border-white/20 bg-white/15 text-5xl shadow-xl backdrop-blur-sm dark:border-emerald-200/15 dark:bg-white/5" aria-hidden="true">📸</p>
           <h2 className="mt-6 text-balance font-display text-3xl font-black md:text-5xl">{en?"Show us your masterpieces!":"Montrez-nous vos chefs-d’œuvre !"}</h2>
           <p className="mx-auto mt-4 max-w-xl text-white/80 dark:text-emerald-50/75">{en?"Join our community and share your creations with":"Rejoignez notre communauté et partagez vos créations avec"} <strong className="font-black text-white">#LesPetitsCrayons</strong>.</p>
-          <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="focus-ring group mt-8 inline-flex min-h-12 items-center rounded-full bg-white px-7 font-black text-primary shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-emerald-300 dark:text-emerald-950 dark:hover:bg-emerald-200">
+          <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="focus-ring group mt-8 inline-flex min-h-12 items-center rounded-full bg-white px-7 font-black text-primary shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-emerald-700 dark:text-slate-50 dark:hover:bg-emerald-600">
             {en?"Follow us on Instagram":"Nous suivre sur Instagram"} <span className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
           </a>
         </div>
@@ -141,8 +141,10 @@ function HomeSection({ title, eyebrow, href, viewAll, children, tint = false, co
       <div className={tint ? "container" : ""}>
         <div className="flex items-end justify-between gap-4">
           <div className={compact ? "[&>div]:mb-5 [&_h2]:md:text-4xl" : ""}><SectionHeader title={title} eyebrow={eyebrow} as="h2" /></div>
-          <Link href={href} className={`${compact ? "mb-6" : "mb-9"} focus-ring group hidden min-h-11 items-center gap-3 rounded-full border border-primary/15 bg-card/85 py-2 pl-5 pr-2 font-black text-primary shadow-sm backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-primary/35 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/15 sm:inline-flex dark:border-emerald-300/15 dark:bg-white/5`}>
-            {viewAll} <span className="grid size-8 place-items-center rounded-full bg-primary/10 transition duration-300 group-hover:translate-x-0.5 group-hover:bg-white/20"><ArrowRight size={17} aria-hidden="true" /></span>
+          <Link href={href} className={`${compact ? "mb-6" : "mb-9"} focus-ring group relative hidden min-h-12 items-center gap-2 overflow-hidden rounded-full border border-primary/20 bg-card/90 py-2 pl-4 pr-2 font-black text-primary shadow-md backdrop-blur transition duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:border-primary/40 hover:bg-primary hover:text-white hover:shadow-xl hover:shadow-primary/20 active:translate-y-0 active:scale-95 sm:inline-flex dark:border-emerald-300/20 dark:bg-emerald-950/35 dark:text-emerald-200 dark:hover:bg-emerald-700 dark:hover:text-white`}>
+            <Sparkles size={15} className="transition duration-300 group-hover:rotate-12 group-hover:scale-110" aria-hidden="true"/>
+            <span>{viewAll}</span>
+            <span className="grid size-9 place-items-center rounded-full bg-primary/10 transition duration-300 group-hover:translate-x-0.5 group-hover:rotate-[-8deg] group-hover:bg-white/20 dark:bg-emerald-300/10"><ArrowRight size={18} aria-hidden="true" /></span>
           </Link>
         </div>
         {children}

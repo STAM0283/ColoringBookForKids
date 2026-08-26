@@ -38,10 +38,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ segm
   const commonHeaders = { "Content-Type": type, "Accept-Ranges": "bytes", "Cache-Control": protectedPdf ? "private, no-store" : "public, max-age=31536000, immutable" };
   if (!range) return new Response(Readable.toWeb(fs.createReadStream(target)) as ReadableStream, { headers: { ...commonHeaders, "Content-Length": String(fileStat.size) } });
 
-  const match = /bytes=(\d*)-(\d*)/.exec(range);
-  if (!match) return new Response(null, { status: 416 });
-  const start = match[1] ? Number(match[1]) : 0;
-  const end = match[2] ? Math.min(Number(match[2]), fileStat.size - 1) : fileStat.size - 1;
-  if (start > end || start >= fileStat.size) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${fileStat.size}` } });
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+  if (!match || (!match[1] && !match[2])) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${fileStat.size}` } });
+  const suffixLength = !match[1] && match[2] ? Number(match[2]) : null;
+  const start = suffixLength === null ? Number(match[1]) : Math.max(0, fileStat.size - suffixLength);
+  const end = suffixLength === null && match[2] ? Math.min(Number(match[2]), fileStat.size - 1) : fileStat.size - 1;
+  if (suffixLength === 0 || start > end || start >= fileStat.size) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${fileStat.size}` } });
   return new Response(Readable.toWeb(fs.createReadStream(target, { start, end })) as ReadableStream, { status: 206, headers: { ...commonHeaders, "Content-Length": String(end - start + 1), "Content-Range": `bytes ${start}-${end}/${fileStat.size}` } });
 }

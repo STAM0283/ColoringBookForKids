@@ -489,3 +489,75 @@ main input[type="file"]:focus-visible {
 .dark .admin-shell .shadow-lg,
 .dark .admin-shell .shadow-xl,
 .dark .admin-shell .shadow-2xl { --tw-shadow-color: rgb(0 0 0 / .35); }
+
+/* Actions de retrait des médias d'un livre. L'état neutre évite un bouton
+   agressif en permanence ; le rouge apparaît au survol et au clavier pour
+   signaler clairement l'action destructive. */
+.admin-shell button[aria-label="Retirer cette image"],
+.admin-shell video + div > button {
+  min-height: 2.75rem;
+  border: 1px solid rgb(226 232 240) !important;
+  border-radius: 9999px !important;
+  background: rgb(255 255 255) !important;
+  color: rgb(71 85 105) !important;
+  padding-inline: .65rem 1rem !important;
+  box-shadow: 0 6px 18px rgb(15 23 42 / .07);
+  transition: color 180ms ease, background-color 180ms ease,
+    border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.admin-shell button[aria-label="Retirer cette image"] svg,
+.admin-shell video + div > button svg {
+  box-sizing: content-box;
+  border-radius: 9999px;
+  background: rgb(254 242 242);
+  color: rgb(220 38 38);
+  padding: .45rem;
+  transition: background-color 180ms ease, color 180ms ease,
+    transform 180ms ease;
+}
+.admin-shell button[aria-label="Retirer cette image"]:is(:hover, :focus-visible),
+.admin-shell video + div > button:is(:hover, :focus-visible) {
+  border-color: rgb(239 68 68) !important;
+  background: rgb(220 38 38) !important;
+  color: white !important;
+  box-shadow: 0 10px 24px rgb(220 38 38 / .24);
+  outline: none;
+  transform: translateY(-2px);
+}
+.admin-shell button[aria-label="Retirer cette image"]:is(:hover, :focus-visible) svg,
+.admin-shell video + div > button:is(:hover, :focus-visible) svg {
+  background: rgb(255 255 255 / .18);
+  color: white;
+  transform: rotate(-8deg) scale(1.05);
+}
+.admin-shell button[aria-label="Retirer cette image"]:active,
+.admin-shell video + div > button:active {
+  transform: translateY(0) scale(.97);
+}
+.dark .admin-shell button[aria-label="Retirer cette image"],
+.dark .admin-shell video + div > button {
+  border-color: rgb(255 255 255 / .12) !important;
+  background: rgb(255 255 255 / .045) !important;
+  color: rgb(226 232 240) !important;
+  box-shadow: 0 8px 22px rgb(0 0 0 / .22);
+}
+.dark .admin-shell button[aria-label="Retirer cette image"] svg,
+.dark .admin-shell video + div > button svg {
+  background: rgb(248 113 113 / .13);
+  color: rgb(252 165 165);
+}
+.dark .admin-shell button[aria-label="Retirer cette image"]:is(:hover, :focus-visible),
+.dark .admin-shell video + div > button:is(:hover, :focus-visible) {
+  border-color: rgb(248 113 113) !important;
+  background: rgb(185 28 28) !important;
+  color: white !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell button[aria-label="Retirer cette image"],
+  .admin-shell video + div > button,
+  .admin-shell button[aria-label="Retirer cette image"] svg,
+  .admin-shell video + div > button svg {
+    transition: none;
+  }
+}

@@ -5,12 +5,13 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fileTypeFromBuffer } from "file-type";
+import { MAX_VIDEO_SIZE_BYTES, MAX_VIDEO_SIZE_LABEL } from "@/lib/media-limits";
 
 export type MediaKind = "IMAGE" | "PDF" | "VIDEO";
 const rules = {
   IMAGE: { max: 15 * 1024 ** 2, mimes: ["image/jpeg", "image/png", "image/webp", "image/avif"] },
   PDF: { max: 50 * 1024 ** 2, mimes: ["application/pdf"] },
-  VIDEO: { max: 1024 ** 3, mimes: ["video/mp4"] },
+  VIDEO: { max: MAX_VIDEO_SIZE_BYTES, mimes: ["video/mp4"] },
 };
 
 export interface StorageService {
@@ -36,7 +37,7 @@ export class LocalStorageService implements StorageService {
 
   async validateFile(file: File, kind: MediaKind) {
     const rule = rules[kind];
-    if (file.size > rule.max) throw new Error("Fichier trop volumineux");
+    if (file.size > rule.max) throw new Error(kind === "VIDEO" ? `La vidéo dépasse la limite de ${MAX_VIDEO_SIZE_LABEL}.` : "Fichier trop volumineux");
     const head = Buffer.from(await file.slice(0, Math.min(file.size, 4100)).arrayBuffer());
     const detected = await fileTypeFromBuffer(head);
     if (!detected || !rule.mimes.includes(detected.mime)) throw new Error("Type de fichier invalide");

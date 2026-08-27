@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { bookGallery, books, media } from "@/db/schema";
+import { VIDEO_UPLOAD_ERROR } from "@/lib/media-limits";
 import { storageService } from "@/lib/storage/local-storage";
 import { slugify } from "@/lib/utils";
 
@@ -39,7 +40,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if ((await auth())?.user.role !== "ADMIN") return Response.json({ message: "Non autorisé." }, { status: 401 });
-  const form = await request.formData();
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch (error) {
+    console.error("Impossible de lire les fichiers du livre", error);
+    return Response.json({ message: `Import incomplet. ${VIDEO_UPLOAD_ERROR}` }, { status: 413 });
+  }
   const cover = form.get("cover");
   const video = form.get("video");
   const galleryFiles = form.getAll("gallery").filter((value): value is File => value instanceof File && value.size > 0);

@@ -31,7 +31,13 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   compress: true,
-  experimental: { serverActions: { bodySizeLimit: "55mb" } },
+  experimental: {
+    // Les livres peuvent contenir une vidéo et plusieurs images dans le même
+    // multipart/form-data. Cette limite concerne les Route Handlers, tandis
+    // que bodySizeLimit concerne uniquement les Server Actions.
+    proxyClientMaxBodySize: "320mb",
+    serverActions: { bodySizeLimit: "55mb" },
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     qualities: [75, 78, 82, 90, 92],

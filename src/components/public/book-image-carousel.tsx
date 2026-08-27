@@ -35,8 +35,8 @@ export function BookImageCarousel({ images, title, fallback }: { images: Carouse
 
   const viewer = expanded && mounted ? createPortal(
     <div role="dialog" aria-modal="true" aria-label={`${en ? "Preview of" : "Aperçu de"} ${title}`} className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/95 p-4 backdrop-blur-md" onClick={() => setExpanded(false)}>
-      <div className="relative h-full max-h-[92vh] w-full max-w-6xl" onClick={event => event.stopPropagation()}>
-        <Image fill priority quality={90} src={`/media/${current.path}`} alt={current.alt || title} sizes="100vw" className="select-none object-contain" />
+      <div className="relative mx-auto h-full max-h-[92vh] w-full max-w-6xl" onClick={event => event.stopPropagation()}>
+        <Image fill priority quality={90} src={`/media/${current.path}`} alt={current.alt || title} sizes="100vw" className="select-none object-contain object-center" style={{ objectPosition: "50% 50%" }} />
         <button type="button" aria-label={en ? "Close preview" : "Fermer l’aperçu"} onClick={() => setExpanded(false)} className="absolute right-2 top-2 z-10 grid size-12 place-items-center rounded-full bg-white text-slate-900 shadow-xl transition hover:scale-105"><X /></button>
         {images.length > 1 && <>
           <button type="button" aria-label={en ? "Previous image" : "Image précédente"} onClick={previous} className="absolute left-2 top-1/2 z-10 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-900 shadow-xl transition hover:scale-105"><ChevronLeft /></button>
@@ -51,7 +51,7 @@ export function BookImageCarousel({ images, title, fallback }: { images: Carouse
     <div className="relative size-full overflow-hidden">
       <div className="absolute inset-5 grid place-items-center sm:inset-6">
         <div className="relative size-full">
-          <Image fill quality={90} src={`/media/${current.path}`} alt={current.alt || `${en ? "Image of" : "Image de"} ${title}`} sizes="(min-width: 1024px) 33vw, 100vw" className="select-none object-contain object-center drop-shadow-xl transition duration-300 group-hover:scale-[1.02]" />
+          <Image fill quality={90} src={`/media/${current.path}`} alt={current.alt || `${en ? "Image of" : "Image de"} ${title}`} sizes="(min-width: 1024px) 33vw, 100vw" className="select-none object-contain object-center drop-shadow-xl transition duration-300 group-hover:scale-[1.02]" style={{ objectPosition: "50% 50%" }} />
         </div>
       </div>
       <button type="button" aria-label={en ? "Enlarge image" : "Agrandir l’image"} onClick={() => setExpanded(true)} className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-white/95 text-slate-800 shadow-md transition hover:scale-105"><Expand size={17} /></button>

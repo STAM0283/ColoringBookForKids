@@ -1,12 +1,16 @@
 "use client";
 
 import { isValidElement, useState } from "react";
+import { MarkdownEditor } from "./markdown-editor";
 
 type FieldControlProps = {
   required?: boolean;
+  minLength?: number;
   maxLength?: number;
   value?: unknown;
   defaultValue?: unknown;
+  name?: string;
+  onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
 };
 
 export function AdminFormField({ label, children, hint, optional = false }: {
@@ -23,6 +27,29 @@ export function AdminFormField({ label, children, hint, optional = false }: {
   const [typedLength, setTypedLength] = useState(String(initialValue).length);
   const currentLength = controlledValue === undefined ? typedLength : String(controlledValue ?? "").length;
   const remaining = maxLength === undefined ? undefined : Math.max(0, maxLength - currentLength);
+
+  if (
+    label.toLocaleLowerCase("fr").includes("description") &&
+    control?.type === "textarea" &&
+    typeof initialValue === "string"
+  ) {
+    return (
+      <MarkdownEditor
+        name={control.props.name}
+        label={label}
+        value={String(controlledValue ?? initialValue)}
+        onChange={(value) => {
+          const target = { value } as HTMLTextAreaElement;
+          control.props.onChange?.({ target, currentTarget: target } as React.ChangeEvent<HTMLTextAreaElement>);
+        }}
+        required={required}
+        minimumLength={control.props.minLength ?? 0}
+        maximumLength={maxLength ?? 2000}
+        compact
+        help={hint ?? "Structurez la présentation avec du gras, des listes ou des sous-titres."}
+      />
+    );
+  }
 
   return (
     <label

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Eraser, LoaderCircle, Redo2, RotateCcw, Undo2, X } from "lucide-react";
+import { Eraser, LoaderCircle, Maximize2, Minus, Plus, Redo2, RotateCcw, Undo2, X } from "lucide-react";
 import { useViewportLock } from "@/hooks/use-viewport-lock";
 import { ExportColoringButtons } from "./export-coloring-buttons";
 import { MobileColoringToolbar } from "./mobile-coloring-toolbar";
@@ -10,10 +10,13 @@ import { buildColoringRegionMap, findColoringRegion, type ColoringRegionMap } fr
 
 const colors = ["#EF4444", "#F97316", "#FACC15", "#22C55E", "#14B8A6", "#38BDF8", "#2563EB", "#8B5CF6", "#EC4899", "#92400E", "#111827", "#FFFFFF"];
 type PaintAction = { region: number; before: string | null; after: string | null };
+type Point = { x: number; y: number };
+type Pinch = { distance: number; midpoint: Point; zoom: number; pan: Point };
 
 export function RasterColoringStudio({ title, imagePath, en, close }: { title:string; imagePath:string; en:boolean; close:()=>void }) {
   useViewportLock();
   const canvas = useRef<HTMLCanvasElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
   const original = useRef<ImageData | null>(null);
   const regionMap = useRef<ColoringRegionMap | null>(null);
   const regionColors = useRef(new Map<number, string>());
@@ -26,6 +29,15 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  const zoomRef = useRef(1);
+  const panRef = useRef<Point>({ x: 0, y: 0 });
+  const pointers = useRef(new Map<number, Point>());
+  const pinch = useRef<Pinch | null>(null);
+  const touchStart = useRef<{ point: Point; moved: boolean; multi: boolean } | null>(null);
+  const lastTap = useRef<{ at: number; point: Point } | null>(null);
+  const [touchTarget, setTouchTarget] = useState<Point | null>(null);
 
   useEffect(() => {
     const image = new Image();
@@ -45,19 +57,19 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
       regionMap.current = buildColoringRegionMap(original.current.data, target.width, target.height);
       regionColors.current.clear();
       updateHistory([], []);
+      fitDrawing();
       setLoading(false);
     };
     image.onerror = () => setMessage(en ? "The image could not be loaded." : "Impossible de charger l’image.");
     image.src = `/media/${imagePath}`;
   }, [imagePath, en]);
 
-  function paint(event: React.PointerEvent<HTMLCanvasElement>) {
+  function paintAt(clientX: number, clientY: number, vibrate = false) {
     const target = canvas.current, context = target?.getContext("2d", { willReadFrequently:true });
     if (!target || !context || loading) return;
     const map = regionMap.current;
     if (!map) return;
-    event.preventDefault();
-    const point = pointerToCanvas(target, event.clientX, event.clientY);
+    const point = pointerToCanvas(target, clientX, clientY);
     if (!point) return;
     const { x, y, displayedWidth } = point;
     const searchRadius = Math.ceil(4 * target.width / displayedWidth);
@@ -69,6 +81,94 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     drawRegion(region, after);
     updateHistory([...undoHistory.current.slice(-49), { region, before, after }], []);
     setMessage("");
+    if (vibrate && "vibrate" in navigator) navigator.vibrate(12);
+  }
+
+  function setView(nextZoom: number, nextPan: Point) {
+    const safeZoom = Math.max(1, Math.min(5, nextZoom));
+    const safePan = clampPan(nextPan, safeZoom, viewport.current);
+    zoomRef.current = safeZoom;
+    panRef.current = safePan;
+    setZoom(safeZoom);
+    setPan(safePan);
+  }
+
+  function fitDrawing() { setView(1, { x: 0, y: 0 }); }
+
+  function zoomAt(nextZoom: number, clientPoint?: Point) {
+    const frame = viewport.current?.getBoundingClientRect();
+    const currentZoom = zoomRef.current;
+    if (!frame || !clientPoint) return setView(nextZoom, panRef.current);
+    const center = { x: frame.left + frame.width / 2, y: frame.top + frame.height / 2 };
+    const ratio = Math.max(1, Math.min(5, nextZoom)) / currentZoom;
+    setView(nextZoom, {
+      x: clientPoint.x - center.x - (clientPoint.x - center.x - panRef.current.x) * ratio,
+      y: clientPoint.y - center.y - (clientPoint.y - center.y - panRef.current.y) * ratio,
+    });
+  }
+
+  function onPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = { x: event.clientX, y: event.clientY };
+    pointers.current.set(event.pointerId, point);
+    if (event.pointerType === "mouse" || event.pointerType === "pen") return paintAt(event.clientX, event.clientY);
+    setTouchTarget(relativePoint(point, viewport.current));
+    if (pointers.current.size === 1) touchStart.current = { point, moved: false, multi: false };
+    if (pointers.current.size === 2) {
+      const [first, second] = [...pointers.current.values()];
+      const midpoint = middle(first, second);
+      pinch.current = { distance: distance(first, second), midpoint, zoom: zoomRef.current, pan: panRef.current };
+      if (touchStart.current) touchStart.current.multi = true;
+    }
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!pointers.current.has(event.pointerId)) return;
+    event.preventDefault();
+    const point = { x: event.clientX, y: event.clientY };
+    pointers.current.set(event.pointerId, point);
+    if (touchStart.current && distance(touchStart.current.point, point) > 8) touchStart.current.moved = true;
+    if (pointers.current.size < 2 || !pinch.current) return;
+    const [first, second] = [...pointers.current.values()];
+    const midpoint = middle(first, second);
+    const nextZoom = pinch.current.zoom * distance(first, second) / Math.max(1, pinch.current.distance);
+    const scaleChange = Math.max(1, Math.min(5, nextZoom)) / pinch.current.zoom;
+    const frame = viewport.current?.getBoundingClientRect();
+    if (!frame) return;
+    const center = { x:frame.left + frame.width / 2, y:frame.top + frame.height / 2 };
+    setView(nextZoom, {
+      x: midpoint.x - center.x - (pinch.current.midpoint.x - center.x - pinch.current.pan.x) * scaleChange,
+      y: midpoint.y - center.y - (pinch.current.midpoint.y - center.y - pinch.current.pan.y) * scaleChange,
+    });
+  }
+
+  function onPointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!pointers.current.has(event.pointerId)) return;
+    event.preventDefault();
+    const start = touchStart.current;
+    pointers.current.delete(event.pointerId);
+    setTouchTarget(null);
+    if (pointers.current.size < 2) pinch.current = null;
+    if (event.pointerType === "mouse" || event.pointerType === "pen" || !start || start.multi || start.moved) {
+      if (!pointers.current.size) touchStart.current = null;
+      return;
+    }
+    const point = { x: event.clientX, y: event.clientY };
+    const previous = lastTap.current;
+    if (previous && performance.now() - previous.at < 330 && distance(previous.point, point) < 32) {
+      zoomAt(zoomRef.current > 1 ? 1 : 2.25, point);
+      lastTap.current = null;
+    } else {
+      paintAt(point.x, point.y, true);
+      lastTap.current = { at: performance.now(), point };
+    }
+    touchStart.current = null;
+  }
+
+  function onPointerCancel(event: React.PointerEvent<HTMLCanvasElement>) {
+    pointers.current.delete(event.pointerId);
+    if (!pointers.current.size) { pinch.current = null; touchStart.current = null; setTouchTarget(null); }
   }
   function drawRegion(regionId: number, value: string | null) {
     const target = canvas.current;
@@ -121,7 +221,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-3 backdrop-blur dark:border-white/10 lg:h-auto lg:px-4 lg:py-3"><div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-widest text-primary lg:text-[10px]">{en ? "Magic colouring" : "Coloriage magique"}</p><h1 className="truncate font-display text-base font-black lg:text-xl">{title}</h1></div><button onClick={close} aria-label={en ? "Close" : "Fermer"} className="grid size-10 shrink-0 place-items-center rounded-xl border dark:border-white/10 lg:size-11"><X/></button></header>
     <main className="mx-auto grid min-h-0 w-full max-w-7xl flex-1 p-2 pb-[6.75rem] lg:grid-cols-[250px_1fr] lg:gap-5 lg:p-4">
       <aside className="hidden space-y-4 lg:block"><section className="rounded-[1.5rem] border bg-card p-4 dark:border-white/10"><p className="text-sm font-black">{en ? "Choose a colour" : "Choisis une couleur"}</p><div className="mt-3 grid grid-cols-4 gap-2">{colors.map(value => <button key={value} onClick={() => { setColor(value); setEraser(false); }} aria-label={value} className={`aspect-square rounded-xl border-2 transition hover:scale-110 ${!eraser && color === value ? "scale-110 border-slate-950 ring-4 ring-primary/30 dark:border-white" : "border-white/70 dark:border-white/15"}`} style={{ backgroundColor:value }}/>)}</div><button onClick={() => setEraser(true)} className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-black ${eraser ? "bg-primary/15 text-primary" : "dark:border-white/10"}`}><Eraser size={17}/>{en ? "White eraser" : "Gomme blanche"}</button></section><section className="grid grid-cols-2 gap-2 rounded-[1.5rem] border bg-card p-3 dark:border-white/10"><button disabled={!undo.length} onClick={undoOne} className={action}><Undo2 size={17}/>{en ? "Undo" : "Annuler"}</button><button disabled={!redo.length} onClick={redoOne} className={action}><Redo2 size={17}/>{en ? "Redo" : "Rétablir"}</button><button onClick={reset} className={`${action} col-span-2`}><RotateCcw size={17}/>{en ? "Start again" : "Recommencer"}</button></section><ExportColoringButtons title={title} en={en} getCanvas={() => canvas.current}/></aside>
-      <section className="relative min-h-0 min-w-0 overflow-hidden">{message && <p className="absolute inset-x-2 top-2 z-10 rounded-xl bg-amber-100/95 p-2 text-center text-xs font-bold text-amber-900 shadow dark:bg-amber-950/95 dark:text-amber-200 lg:relative lg:inset-auto lg:mb-3 lg:p-3 lg:text-sm">{message}</p>}<div className="relative size-full min-h-0 min-w-0 overflow-hidden rounded-xl border bg-white p-1 shadow-lg dark:border-white/10 lg:min-h-[60vh] lg:rounded-[2rem] lg:p-2 lg:shadow-xl">{loading && <LoaderCircle className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary"/>}<canvas ref={canvas} onPointerDown={paint} className="absolute left-1/2 top-1/2 block h-auto w-auto max-h-[calc(100%-0.5rem)] max-w-[calc(100%-0.5rem)] -translate-x-1/2 -translate-y-1/2 cursor-crosshair touch-none select-none lg:max-h-[calc(100%-1rem)] lg:max-w-[calc(100%-1rem)]"/></div></section>
+      <section className="relative min-h-0 min-w-0 overflow-hidden">{message && <p className="absolute inset-x-2 top-2 z-30 rounded-xl bg-amber-100/95 p-2 text-center text-xs font-bold text-amber-900 shadow dark:bg-amber-950/95 dark:text-amber-200 lg:relative lg:inset-auto lg:mb-3 lg:p-3 lg:text-sm">{message}</p>}<div ref={viewport} className="relative size-full min-h-0 min-w-0 overflow-hidden rounded-xl border bg-white p-1 shadow-lg dark:border-white/10 lg:min-h-[60vh] lg:rounded-[2rem] lg:p-2 lg:shadow-xl">{loading && <LoaderCircle className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary"/>}<div className="absolute inset-0 grid place-items-center will-change-transform" style={{ transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transformOrigin:"center" }}><canvas ref={canvas} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onLostPointerCapture={onPointerCancel} className="block h-auto w-auto max-h-[calc(100%-0.5rem)] max-w-[calc(100%-0.5rem)] cursor-crosshair touch-none select-none lg:max-h-[calc(100%-1rem)] lg:max-w-[calc(100%-1rem)]"/></div>{touchTarget && <span aria-hidden className="pointer-events-none absolute z-20 size-9 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-primary/10 shadow-[0_0_0_4px_rgb(255_255_255/.8)]" style={{ left:touchTarget.x, top:touchTarget.y }}/>}<div className="absolute bottom-2 right-2 z-30 flex gap-1 rounded-xl border bg-card/95 p-1 shadow-lg backdrop-blur lg:hidden"><button type="button" onClick={() => zoomAt(zoomRef.current - .5)} disabled={zoom <= 1} className="mobile-coloring-zoom" aria-label={en ? "Zoom out" : "Dézoomer"}><Minus size={18}/></button><button type="button" onClick={fitDrawing} className="mobile-coloring-zoom" aria-label={en ? "Fit drawing" : "Ajuster le dessin"}><Maximize2 size={17}/></button><button type="button" onClick={() => zoomAt(zoomRef.current + .5)} disabled={zoom >= 5} className="mobile-coloring-zoom" aria-label={en ? "Zoom in" : "Zoomer"}><Plus size={18}/></button></div></div></section>
     </main>
     <MobileColoringToolbar colors={colors} color={color} eraser={eraser} undoDisabled={!undo.length} redoDisabled={!redo.length} en={en} title={title} setColor={setColor} setEraser={setEraser} undo={undoOne} redo={redoOne} reset={reset} getCanvas={() => canvas.current}/>
     {confirmingReset && <ColoringResetDialog en={en} cancel={() => setConfirmingReset(false)} confirm={confirmReset}/>}
@@ -130,6 +230,22 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
 
 const action = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border text-xs font-black disabled:opacity-35 dark:border-white/10";
 function hex(value: string) { return [value.slice(1, 3), value.slice(3, 5), value.slice(5, 7), "FF"].map(part => parseInt(part, 16)); }
+function distance(first: Point, second: Point) { return Math.hypot(second.x - first.x, second.y - first.y); }
+function middle(first: Point, second: Point) { return { x:(first.x + second.x) / 2, y:(first.y + second.y) / 2 }; }
+function relativePoint(point: Point, target: HTMLElement | null) {
+  const rect = target?.getBoundingClientRect();
+  return rect ? { x:point.x - rect.left, y:point.y - rect.top } : null;
+}
+function clampPan(point: Point, zoom: number, target: HTMLElement | null) {
+  const rect = target?.getBoundingClientRect();
+  if (!rect || zoom <= 1) return { x:0, y:0 };
+  const limitX = rect.width * (zoom - 1) / 2;
+  const limitY = rect.height * (zoom - 1) / 2;
+  return {
+    x:Math.max(-limitX, Math.min(limitX, point.x)),
+    y:Math.max(-limitY, Math.min(limitY, point.y)),
+  };
+}
 function pointerToCanvas(target: HTMLCanvasElement, clientX: number, clientY: number) {
   const rect = target.getBoundingClientRect();
   if (!rect.width || !rect.height) return null;

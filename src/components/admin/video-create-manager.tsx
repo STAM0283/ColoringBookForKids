@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { CheckCircle2, Clock3, Film, ImageIcon, LoaderCircle, Plus, Sparkles, Tags, UploadCloud, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Children, isValidElement, useEffect, useRef, useState } from "react";
 import { AdminSelect } from "./admin-select";
 import { AdminFormField } from "./admin-form-field";
+import { MarkdownEditor } from "./markdown-editor";
 
 export function VideoCreateManager({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -23,13 +24,33 @@ function CreateVideoDialog({ close }: { close: () => void }) {
   const [videoFile, setVideoFile] = useState<File | null>(null), [videoUrl, setVideoUrl] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null), [thumbnailUrl, setThumbnailUrl] = useState("");
   const [duration, setDuration] = useState(0), [published, setPublished] = useState(true), [featured, setFeatured] = useState(false);
+  const [description,setDescription]=useState("");
   const [categories,setCategories]=useState<Array<{id:string;name:string}>>([]),[categoryId,setCategoryId]=useState("");
   const [loading, setLoading] = useState(false), [error, setError] = useState("");
 
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
   useEffect(() => () => { if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl); }, [thumbnailUrl]);
   useEffect(()=>{fetch("/api/admin/activity-categories").then(response=>response.ok?response.json():{items:[]}).then((data:{items:Array<{id:string;name:string}>})=>setCategories(data.items)).catch(()=>setCategories([]))},[]);
-  function selectVideo(file?: File) { if (videoUrl) URL.revokeObjectURL(videoUrl); setVideoFile(file ?? null); setVideoUrl(file ? URL.createObjectURL(file) : ""); setDuration(0); }
+  function selectVideo(file?: File) {
+    if (videoUrl) URL.revokeObjectURL(videoUrl);
+    setVideoFile(file ?? null);
+    setDuration(0);
+    setError("");
+    if (!file) return setVideoUrl("");
+
+    const url = URL.createObjectURL(file);
+    setVideoUrl(url);
+    const metadataReader = document.createElement("video");
+    metadataReader.preload = "metadata";
+    metadataReader.onloadedmetadata = () => {
+      const seconds = Math.ceil(metadataReader.duration || 0);
+      if (Number.isFinite(seconds) && seconds > 0) setDuration(seconds);
+      metadataReader.removeAttribute("src");
+      metadataReader.load();
+    };
+    metadataReader.onerror = () => setError("L’aperçu de cette vidéo ne peut pas être lu par le navigateur. Vérifiez qu’elle utilise bien le format MP4/H.264.");
+    metadataReader.src = url;
+  }
   function selectThumbnail(file?: File) { if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl); setThumbnailFile(file ?? null); setThumbnailUrl(file ? URL.createObjectURL(file) : ""); }
   function dismiss() { if (!loading) close(); }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -51,7 +72,7 @@ function CreateVideoDialog({ close }: { close: () => void }) {
         <div className="space-y-5">
           <Field label="Langue"><select name="language" defaultValue="FR" className={input}><option value="FR">🇫🇷 Français</option><option value="EN">🇬🇧 Anglais</option></select></Field>
           <Field label="Titre"><input name="title" required minLength={2} maxLength={150} autoFocus placeholder="Ex. Dessinons un petit renard" className={input}/></Field>
-          <Field label="Description"><textarea name="description" required minLength={10} maxLength={2000} placeholder="Présentez le contenu de la vidéo…" className={`${input} min-h-32 resize-y py-3 leading-relaxed`}/></Field>
+          <MarkdownEditor name="description" label="Description" value={description} onChange={setDescription} maximumLength={2000} compact help="Structurez la présentation avec du gras, des listes ou des sous-titres."/>
           <AdminSelect label="Catégorie" icon={<Tags size={18}/>} value={categoryId} options={[{value:"",label:"Sans catégorie"},...categories.map(category=>({value:category.id,label:category.name}))]} onChange={setCategoryId}/>
           <div className="grid gap-4 sm:grid-cols-2"><div className="rounded-2xl border bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[.045]"><p className="flex items-center gap-2 text-sm font-black text-slate-800 dark:text-slate-100"><Clock3 size={16} className="text-emerald-700 dark:text-emerald-300"/>Durée détectée</p><p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{duration ? formatDuration(duration) : "—"}</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Calculée automatiquement depuis le MP4.</p></div><label className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition dark:border-white/10 ${published ? "border-emerald-200 bg-emerald-50 dark:border-emerald-400/40 dark:bg-emerald-400/10" : "bg-slate-50 dark:bg-white/[.045]"}`}><span><span className="block text-sm font-black text-slate-900 dark:text-slate-100">Publier sur le site</span><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{published ? "Visible immédiatement" : "Conserver en brouillon"}</span></span><Switch checked={published}/><input className="sr-only" type="checkbox" checked={published} onChange={event => setPublished(event.target.checked)}/></label></div>
           <label className="flex cursor-pointer items-center gap-3 rounded-2xl border bg-slate-50 p-4 transition hover:border-emerald-300 dark:border-white/10 dark:bg-white/[.045] dark:hover:border-emerald-400/40"><input type="checkbox" checked={featured} onChange={event => setFeatured(event.target.checked)} className="size-5 accent-emerald-700"/><span><span className="block text-sm font-black text-slate-900 dark:text-slate-100">Mettre cette vidéo en avant</span><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Elle apparaîtra prioritairement dans les listes.</span></span></label>
@@ -60,11 +81,11 @@ function CreateVideoDialog({ close }: { close: () => void }) {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <FilePreview title="Vidéo MP4" hint="MP4 · 100 Mo maximum" selected={videoFile?.name} icon={<Film size={28}/>}> 
-            {videoUrl ? <video src={videoUrl} muted controls preload="metadata" onLoadedMetadata={event => setDuration(Math.ceil(event.currentTarget.duration || 0))} className="size-full object-contain"/> : null}
+            {videoUrl ? <video key={videoUrl} src={videoUrl} muted controls playsInline preload="metadata" onClick={event => event.stopPropagation()} onLoadedMetadata={event => { const seconds = Math.ceil(event.currentTarget.duration || 0); if (Number.isFinite(seconds) && seconds > 0) setDuration(seconds); }} onError={() => setError("L’aperçu de cette vidéo ne peut pas être lu par le navigateur. Vérifiez qu’elle utilise bien le format MP4/H.264.")} className="relative z-[1] size-full object-contain"/> : null}
             <input hidden type="file" accept="video/mp4" onChange={event => selectVideo(event.target.files?.[0])}/>
           </FilePreview>
           <FilePreview title="Miniature" hint="Image 16:9 recommandée · 15 Mo maximum" selected={thumbnailFile?.name} icon={<ImageIcon size={28}/>}>
-            {thumbnailUrl ? <Image unoptimized fill src={thumbnailUrl} alt="Aperçu de la miniature" className="object-cover"/> : null}
+            {thumbnailUrl ? <><Image aria-hidden="true" unoptimized fill src={thumbnailUrl} alt="" className="scale-110 object-cover opacity-35 blur-xl"/><Image unoptimized fill src={thumbnailUrl} alt="Aperçu de la miniature" className="object-contain"/></> : null}
             <input hidden type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={event => selectThumbnail(event.target.files?.[0])}/>
           </FilePreview>
         </div>
@@ -78,5 +99,20 @@ function CreateVideoDialog({ close }: { close: () => void }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <AdminFormField label={label}>{children}</AdminFormField>; }
 const input = "mt-2.5 min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 font-semibold text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/[.045] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-emerald-400 dark:focus:bg-white/[.07] dark:focus:ring-emerald-400/15";
 function Switch({ checked }: { checked: boolean }) { return <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? "bg-emerald-600" : "bg-slate-300"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition ${checked ? "left-6" : "left-1"}`}/></span>; }
-function FilePreview({ title, hint, selected, icon, children }: { title: string; hint: string; selected?: string; icon: React.ReactNode; children: React.ReactNode }) { const hasPreview=Boolean(selected); return <label className="group block cursor-pointer"><span className="mb-2 flex items-center justify-between gap-3 text-sm font-black text-slate-800 dark:text-slate-100"><span>{title}</span>{selected&&<span className="max-w-56 truncate text-xs font-semibold text-emerald-700 dark:text-emerald-300">{selected}</span>}</span><span className="relative grid aspect-video w-full place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-950 transition group-hover:border-emerald-500 dark:border-white/15 dark:bg-slate-950/80 dark:group-hover:border-emerald-400">{children}{!hasPreview&&<span className="z-10 text-center text-white"><span className="mx-auto grid size-14 place-items-center rounded-2xl bg-white/10 text-slate-100 ring-1 ring-white/5">{icon}</span><span className="mt-3 block font-black">Choisir un fichier</span><span className="mt-1 block text-xs text-white/60">{hint}</span></span>}{hasPreview&&<span className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-2 rounded-full bg-black/65 px-3 py-2 text-xs font-black text-white backdrop-blur"><UploadCloud size={14}/>Remplacer</span>}</span></label>; }
+function FilePreview({ title, hint, selected, icon, children }: { title: string; hint: string; selected?: string; icon: React.ReactNode; children: React.ReactNode }) {
+  const nodes = Children.toArray(children);
+  const fileInput = nodes.find(node => isValidElement(node) && node.type === "input");
+  const preview = nodes.filter(node => node !== fileInput);
+  const hasPreview = Boolean(selected);
+
+  return <div className="group block">
+    <span className="mb-2 flex items-center justify-between gap-3 text-sm font-black text-slate-800 dark:text-slate-100"><span>{title}</span>{selected&&<span className="max-w-56 truncate text-xs font-semibold text-emerald-700 dark:text-emerald-300">{selected}</span>}</span>
+    <span className="relative grid aspect-video w-full place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-950 transition group-hover:border-emerald-500 dark:border-white/15 dark:bg-slate-950/80 dark:group-hover:border-emerald-400">
+      {preview}
+      {!hasPreview ? <label className="absolute inset-0 z-10 grid cursor-pointer place-items-center text-center text-white">
+        <span><span className="mx-auto grid size-14 place-items-center rounded-2xl bg-white/10 text-slate-100 ring-1 ring-white/5">{icon}</span><span className="mt-3 block font-black">Choisir un fichier</span><span className="mt-1 block text-xs text-white/60">{hint}</span></span>{fileInput}
+      </label> : <label className="absolute bottom-3 right-3 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full bg-black/65 px-3 py-2 text-xs font-black text-white backdrop-blur transition hover:bg-emerald-700"><UploadCloud size={14}/>Remplacer{fileInput}</label>}
+    </span>
+  </div>;
+}
 function formatDuration(seconds: number) { return `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, "0")} s`; }

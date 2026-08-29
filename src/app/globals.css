@@ -561,3 +561,109 @@ main input[type="file"]:focus-visible {
     transition: none;
   }
 }
+
+/* Galerie d'un livre : contrôles lisibles sur les images claires comme sur le
+   fond sombre, avec des états interactifs cohérents avec la couleur du site. */
+.admin-shell button[aria-label="Agrandir"],
+.admin-shell button[aria-label="Image précédente"],
+.admin-shell button[aria-label="Image suivante"] {
+  border: 1px solid rgb(15 23 42 / .10);
+  background: rgb(255 255 255 / .94) !important;
+  color: rgb(15 23 42) !important;
+  box-shadow: 0 8px 22px rgb(2 6 23 / .18);
+  backdrop-filter: blur(10px);
+  transition: color 180ms ease, background-color 180ms ease,
+    border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.admin-shell button[aria-label="Agrandir"]:is(:hover, :focus-visible),
+.admin-shell button[aria-label="Image précédente"]:is(:hover, :focus-visible),
+.admin-shell button[aria-label="Image suivante"]:is(:hover, :focus-visible) {
+  border-color: rgb(16 185 129 / .55);
+  background: rgb(5 150 105) !important;
+  color: white !important;
+  box-shadow: 0 10px 26px rgb(5 150 105 / .28);
+  outline: none;
+  transform: scale(1.06);
+}
+.admin-shell button[aria-label="Agrandir"]:active,
+.admin-shell button[aria-label="Image précédente"]:active,
+.admin-shell button[aria-label="Image suivante"]:active {
+  transform: scale(.94);
+}
+.dark .admin-shell button[aria-label="Agrandir"],
+.dark .admin-shell button[aria-label="Image précédente"],
+.dark .admin-shell button[aria-label="Image suivante"] {
+  border-color: rgb(255 255 255 / .18);
+  background: rgb(15 23 42 / .88) !important;
+  color: rgb(241 245 249) !important;
+  box-shadow: 0 10px 28px rgb(0 0 0 / .42);
+}
+.dark .admin-shell button[aria-label="Agrandir"]:is(:hover, :focus-visible),
+.dark .admin-shell button[aria-label="Image précédente"]:is(:hover, :focus-visible),
+.dark .admin-shell button[aria-label="Image suivante"]:is(:hover, :focus-visible) {
+  border-color: rgb(110 231 183 / .60);
+  background: rgb(16 185 129) !important;
+  color: rgb(2 6 23) !important;
+}
+
+.admin-shell button[aria-label="Agrandir"] svg,
+.admin-shell button[aria-label="Image précédente"] svg,
+.admin-shell button[aria-label="Image suivante"] svg {
+  stroke-width: 2.25;
+}
+
+.admin-shell div:has(> button[aria-label="Retirer cette image"]) {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184) rgb(241 245 249);
+}
+.dark .admin-shell div:has(> button[aria-label="Retirer cette image"]) {
+  scrollbar-color: rgb(100 116 139) rgb(15 23 42 / .55);
+}
+.admin-shell div:has(> button[aria-label="Retirer cette image"])::-webkit-scrollbar {
+  height: .5rem;
+}
+.admin-shell div:has(> button[aria-label="Retirer cette image"])::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgb(148 163 184);
+}
+.dark .admin-shell div:has(> button[aria-label="Retirer cette image"])::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell button[aria-label="Agrandir"],
+  .admin-shell button[aria-label="Image précédente"],
+  .admin-shell button[aria-label="Image suivante"] {
+    transition: none;
+  }
+}
+
+/* Cartes des coloriages dans le back-office. Les règles génériques du thème
+   sombre ne doivent pas rendre le badge clair illisible ni griser l'aperçu. */
+.dark .admin-shell article:has(> div > span.absolute.left-4.top-4) > div:first-child {
+  background-color: rgb(9 16 29) !important;
+}
+.dark .admin-shell article:has(> div > span.absolute.left-4.top-4) > div > span.absolute.left-4.top-4 {
+  border: 1px solid rgb(255 255 255 / .72);
+  background: rgb(255 255 255 / .94) !important;
+  color: rgb(15 23 42) !important;
+  box-shadow: 0 6px 18px rgb(0 0 0 / .28);
+}
+.dark .admin-shell article:has(> div > span.absolute.left-4.top-4) h2 {
+  color: rgb(248 250 252) !important;
+}
+.dark .admin-shell article:has(> div > span.absolute.left-4.top-4) p[class~="text-slate-500"] {
+  color: rgb(203 213 225) !important;
+}
+.dark .admin-shell input[placeholder="Rechercher un coloriage…"] {
+  border-color: rgb(255 255 255 / .14) !important;
+  background: rgb(255 255 255 / .045) !important;
+  color: rgb(248 250 252) !important;
+}
+.dark .admin-shell input[placeholder="Rechercher un coloriage…"]::placeholder {
+  color: rgb(203 213 225 / .72) !important;
+}
+.dark .admin-shell input[placeholder="Rechercher un coloriage…"]:focus {
+  border-color: rgb(52 211 153 / .72) !important;
+  box-shadow: 0 0 0 4px rgb(16 185 129 / .13);
+}

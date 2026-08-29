@@ -23,7 +23,7 @@ export function VideoGallery({ items }: { items: PublicVideo[] }) {
   }, [selected]);
 
   return <>
-    <div className={`grid gap-7 sm:grid-cols-2 lg:grid-cols-3 ${items.length === 1 ? "w-full max-w-2xl sm:grid-cols-1" : items.length === 2 ? "w-full max-w-5xl lg:grid-cols-2" : ""}`}>
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map(item => {
         const open = expanded === item.id;
         return <article key={item.id} className="group overflow-hidden rounded-[1.5rem] border bg-card shadow-[0_18px_50px_-32px_rgba(15,23,42,.55)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl">

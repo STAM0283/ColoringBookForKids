@@ -35,7 +35,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
   const panRef = useRef<Point>({ x: 0, y: 0 });
   const pointers = useRef(new Map<number, Point>());
   const pinch = useRef<Pinch | null>(null);
-  const touchStart = useRef<{ point: Point; moved: boolean; multi: boolean } | null>(null);
+  const touchStart = useRef<{ point: Point; pan: Point; moved: boolean; multi: boolean } | null>(null);
   const lastTap = useRef<{ at: number; point: Point } | null>(null);
   const [touchTarget, setTouchTarget] = useState<Point | null>(null);
 
@@ -114,7 +114,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     pointers.current.set(event.pointerId, point);
     if (event.pointerType === "mouse" || event.pointerType === "pen") return paintAt(event.clientX, event.clientY);
     setTouchTarget(relativePoint(point, viewport.current));
-    if (pointers.current.size === 1) touchStart.current = { point, moved: false, multi: false };
+    if (pointers.current.size === 1) touchStart.current = { point, pan: panRef.current, moved: false, multi: false };
     if (pointers.current.size === 2) {
       const [first, second] = [...pointers.current.values()];
       const midpoint = middle(first, second);
@@ -128,7 +128,17 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     event.preventDefault();
     const point = { x: event.clientX, y: event.clientY };
     pointers.current.set(event.pointerId, point);
-    if (touchStart.current && distance(touchStart.current.point, point) > 8) touchStart.current.moved = true;
+    if (touchStart.current && distance(touchStart.current.point, point) > 8) {
+      touchStart.current.moved = true;
+      setTouchTarget(null);
+    }
+    if (pointers.current.size === 1 && touchStart.current?.moved && !touchStart.current.multi) {
+      setView(zoomRef.current, {
+        x: touchStart.current.pan.x + point.x - touchStart.current.point.x,
+        y: touchStart.current.pan.y + point.y - touchStart.current.point.y,
+      });
+      return;
+    }
     if (pointers.current.size < 2 || !pinch.current) return;
     const [first, second] = [...pointers.current.values()];
     const midpoint = middle(first, second);
@@ -150,6 +160,11 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     pointers.current.delete(event.pointerId);
     setTouchTarget(null);
     if (pointers.current.size < 2) pinch.current = null;
+    if (start?.multi && pointers.current.size === 1) {
+      const remaining = [...pointers.current.values()][0];
+      touchStart.current = { point: remaining, pan: panRef.current, moved: true, multi: false };
+      return;
+    }
     if (event.pointerType === "mouse" || event.pointerType === "pen" || !start || start.multi || start.moved) {
       if (!pointers.current.size) touchStart.current = null;
       return;
@@ -221,7 +236,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-3 backdrop-blur dark:border-white/10 lg:h-auto lg:px-4 lg:py-3"><div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-widest text-primary lg:text-[10px]">{en ? "Magic colouring" : "Coloriage magique"}</p><h1 className="truncate font-display text-base font-black lg:text-xl">{title}</h1></div><button onClick={close} aria-label={en ? "Close" : "Fermer"} className="grid size-10 shrink-0 place-items-center rounded-xl border dark:border-white/10 lg:size-11"><X/></button></header>
     <main className="mx-auto grid min-h-0 w-full max-w-7xl flex-1 p-2 pb-[6.75rem] lg:grid-cols-[250px_1fr] lg:gap-5 lg:p-4">
       <aside className="hidden space-y-4 lg:block"><section className="rounded-[1.5rem] border bg-card p-4 dark:border-white/10"><p className="text-sm font-black">{en ? "Choose a colour" : "Choisis une couleur"}</p><div className="mt-3 grid grid-cols-4 gap-2">{colors.map(value => <button key={value} onClick={() => { setColor(value); setEraser(false); }} aria-label={value} className={`aspect-square rounded-xl border-2 transition hover:scale-110 ${!eraser && color === value ? "scale-110 border-slate-950 ring-4 ring-primary/30 dark:border-white" : "border-white/70 dark:border-white/15"}`} style={{ backgroundColor:value }}/>)}</div><button onClick={() => setEraser(true)} className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-black ${eraser ? "bg-primary/15 text-primary" : "dark:border-white/10"}`}><Eraser size={17}/>{en ? "White eraser" : "Gomme blanche"}</button></section><section className="grid grid-cols-2 gap-2 rounded-[1.5rem] border bg-card p-3 dark:border-white/10"><button disabled={!undo.length} onClick={undoOne} className={action}><Undo2 size={17}/>{en ? "Undo" : "Annuler"}</button><button disabled={!redo.length} onClick={redoOne} className={action}><Redo2 size={17}/>{en ? "Redo" : "Rétablir"}</button><button onClick={reset} className={`${action} col-span-2`}><RotateCcw size={17}/>{en ? "Start again" : "Recommencer"}</button></section><ExportColoringButtons title={title} en={en} getCanvas={() => canvas.current}/></aside>
-      <section className="relative min-h-0 min-w-0 overflow-hidden">{message && <p className="absolute inset-x-2 top-2 z-30 rounded-xl bg-amber-100/95 p-2 text-center text-xs font-bold text-amber-900 shadow dark:bg-amber-950/95 dark:text-amber-200 lg:relative lg:inset-auto lg:mb-3 lg:p-3 lg:text-sm">{message}</p>}<div ref={viewport} className="relative size-full min-h-0 min-w-0 overflow-hidden rounded-xl border bg-white p-1 shadow-lg dark:border-white/10 lg:min-h-[60vh] lg:rounded-[2rem] lg:p-2 lg:shadow-xl">{loading && <LoaderCircle className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary"/>}<div className="absolute inset-0 grid place-items-center will-change-transform" style={{ transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transformOrigin:"center" }}><canvas ref={canvas} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onLostPointerCapture={onPointerCancel} className="block h-auto w-auto max-h-[calc(100%-0.5rem)] max-w-[calc(100%-0.5rem)] cursor-crosshair touch-none select-none lg:max-h-[calc(100%-1rem)] lg:max-w-[calc(100%-1rem)]"/></div>{touchTarget && <span aria-hidden className="pointer-events-none absolute z-20 size-9 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-primary/10 shadow-[0_0_0_4px_rgb(255_255_255/.8)]" style={{ left:touchTarget.x, top:touchTarget.y }}/>}<div className="absolute bottom-2 right-2 z-30 flex gap-1 rounded-xl border bg-card/95 p-1 shadow-lg backdrop-blur lg:hidden"><button type="button" onClick={() => zoomAt(zoomRef.current - .5)} disabled={zoom <= 1} className="mobile-coloring-zoom" aria-label={en ? "Zoom out" : "Dézoomer"}><Minus size={18}/></button><button type="button" onClick={fitDrawing} className="mobile-coloring-zoom" aria-label={en ? "Fit drawing" : "Ajuster le dessin"}><Maximize2 size={17}/></button><button type="button" onClick={() => zoomAt(zoomRef.current + .5)} disabled={zoom >= 5} className="mobile-coloring-zoom" aria-label={en ? "Zoom in" : "Zoomer"}><Plus size={18}/></button></div></div></section>
+      <section className="relative min-h-0 min-w-0 overflow-hidden">{message && <p className="absolute inset-x-2 top-2 z-30 rounded-xl bg-amber-100/95 p-2 text-center text-xs font-bold text-amber-900 shadow dark:bg-amber-950/95 dark:text-amber-200 lg:relative lg:inset-auto lg:mb-3 lg:p-3 lg:text-sm">{message}</p>}<div ref={viewport} className="relative size-full min-h-0 min-w-0 overflow-hidden rounded-xl border bg-white p-1 shadow-lg dark:border-white/10 lg:min-h-[60vh] lg:rounded-[2rem] lg:p-2 lg:shadow-xl">{loading && <LoaderCircle className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary"/>}<div className="absolute inset-0 grid place-items-center will-change-transform" style={{ transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transformOrigin:"center" }}><canvas ref={canvas} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onLostPointerCapture={onPointerCancel} className="block size-full cursor-crosshair touch-none select-none object-contain"/></div>{touchTarget && <span aria-hidden className="pointer-events-none absolute z-20 size-9 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-primary/10 shadow-[0_0_0_4px_rgb(255_255_255/.8)]" style={{ left:touchTarget.x, top:touchTarget.y }}/>}<div className="absolute bottom-2 right-2 z-30 flex gap-1 rounded-xl border bg-card/95 p-1 shadow-lg backdrop-blur lg:hidden"><button type="button" onClick={() => zoomAt(zoomRef.current - .5)} disabled={zoom <= 1} className="mobile-coloring-zoom" aria-label={en ? "Zoom out" : "Dézoomer"}><Minus size={18}/></button><button type="button" onClick={fitDrawing} className="mobile-coloring-zoom" aria-label={en ? "Fit drawing" : "Ajuster le dessin"}><Maximize2 size={17}/></button><button type="button" onClick={() => zoomAt(zoomRef.current + .5)} disabled={zoom >= 5} className="mobile-coloring-zoom" aria-label={en ? "Zoom in" : "Zoomer"}><Plus size={18}/></button></div></div></section>
     </main>
     <MobileColoringToolbar colors={colors} color={color} eraser={eraser} undoDisabled={!undo.length} redoDisabled={!redo.length} en={en} title={title} setColor={setColor} setEraser={setEraser} undo={undoOne} redo={redoOne} reset={reset} getCanvas={() => canvas.current}/>
     {confirmingReset && <ColoringResetDialog en={en} cancel={() => setConfirmingReset(false)} confirm={confirmReset}/>}

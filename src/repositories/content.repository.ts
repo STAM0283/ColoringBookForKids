@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, getTableColumns, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
-import { activities, activityGallery, activityTypes, bookGallery, books, categories, media, posts, vlogs } from "@/db/schema";
+import { activities, activityCategories, activityGallery, activityTypes, bookGallery, books, categories, media, posts, vlogs } from "@/db/schema";
 
 export type ContentLanguage = "FR" | "EN";
 export type ListingOptions = { page?: number; pageSize?: number; search?: string; category?: string; activityType?: string; pricing?: "FREE" | "PAID"; sort?: "newest" | "oldest"; language?: ContentLanguage };
@@ -53,10 +53,16 @@ export const contentRepository = {
       db.select({ ...getTableColumns(activities), activityType:activityTypes, pdfPath: pdf.path, previewPath: preview.path, previewAlt: preview.alt }).from(activities).leftJoin(activityTypes,eq(activities.activityTypeId,activityTypes.id)).leftJoin(pdf, eq(activities.pdfMediaId, pdf.id)).leftJoin(preview, eq(activities.previewMediaId, preview.id)).where(where).orderBy(desc(activities.featured), dateOrder).limit(pagination.pageSize).offset(pagination.offset),
       db.select({ count: sql<number>`count(*)` }).from(activities).leftJoin(activityTypes,eq(activities.activityTypeId,activityTypes.id)).where(where),
     ]);
-    const galleryRows = items.length ? await db.select({ activityId: activityGallery.activityId, path: media.path, alt: media.alt }).from(activityGallery).innerJoin(media, eq(activityGallery.mediaId, media.id)).where(inArray(activityGallery.activityId, items.map(item => item.id))).orderBy(asc(activityGallery.sortOrder)) : [];
+    const activityIds = items.map(item => item.id);
+    const [galleryRows, categoryRows] = items.length ? await Promise.all([
+      db.select({ activityId: activityGallery.activityId, path: media.path, alt: media.alt }).from(activityGallery).innerJoin(media, eq(activityGallery.mediaId, media.id)).where(inArray(activityGallery.activityId, activityIds)).orderBy(asc(activityGallery.sortOrder)),
+      db.select({ activityId: activityCategories.activityId, name: categories.name, color: categories.color, badge: categories.badge }).from(activityCategories).innerJoin(categories, eq(activityCategories.categoryId, categories.id)).where(inArray(activityCategories.activityId, activityIds)).orderBy(asc(categories.sortOrder), asc(categories.name)),
+    ]) : [[], []];
     const galleryByActivity = new Map<string, Array<{path:string;alt:string|null}>>();
     for (const row of galleryRows) { const gallery = galleryByActivity.get(row.activityId) ?? []; gallery.push({path:row.path,alt:row.alt}); galleryByActivity.set(row.activityId,gallery); }
-    return pageResult(pagination, items.map(item => ({...item,gallery:galleryByActivity.get(item.id)??[]})), Number(count));
+    const categoriesByActivity = new Map<string, Array<{name:string;color:string;badge:string}>>();
+    for (const row of categoryRows) { const list = categoriesByActivity.get(row.activityId) ?? []; list.push({name:row.name,color:row.color,badge:row.badge}); categoriesByActivity.set(row.activityId,list); }
+    return pageResult(pagination, items.map(item => ({...item,gallery:galleryByActivity.get(item.id)??[],categories:categoriesByActivity.get(item.id)??[]})), Number(count));
   },
 
   async posts(options: ListingOptions = {}) {

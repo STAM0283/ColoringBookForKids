@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Eye, LoaderCircle, Pencil, Plus, RefreshCw, Search, Tags, Trash2, X } from "lucide-react";
 import { ClientPagination } from "@/components/client-pagination";
 import { CategoryBadgePicker as BadgePicker } from "./category-badge-picker";
+import { MarkdownEditor } from "./markdown-editor";
+import { MarkdownContent } from "@/components/markdown-content";
 type Category = {
     id: string;
     name: string;
@@ -47,17 +49,42 @@ function Modal({ children, close, width = "max-w-xl" }: {
     children: React.ReactNode;
     close: () => void;
     width?: string;
-}) { return <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm" onMouseDown={close}><div onMouseDown={event => event.stopPropagation()} className={`max-h-[92vh] w-full overflow-auto rounded-[2rem] bg-white shadow-2xl ${width}`}>{children}</div></div>; }
+}) { return <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm" onMouseDown={close}><div role="dialog" aria-modal="true" onMouseDown={event => event.stopPropagation()} className={`max-h-[92vh] w-full overflow-auto rounded-[2rem] bg-white shadow-2xl dark:bg-slate-900 dark:text-white ${width}`}>{children}</div></div>; }
 function CategoryForm({ title, initial, close, submit }: {
     title: string;
     initial: FormValue | Category;
     close: () => void;
     submit: (value: FormValue) => void;
-}) { const [value, setValue] = useState<FormValue>({ name: initial.name, description: initial.description || "", color: initial.color, badge: initial.badge }); return <Modal close={close}><form onSubmit={event => { event.preventDefault(); submit(value); }}><div className="flex items-center justify-between border-b p-6"><h2 className="text-2xl font-black">{title}</h2><button type="button" onClick={close} className="grid size-10 place-items-center rounded-xl bg-slate-100"><X /></button></div><div className="grid gap-5 p-6"><label className="text-sm font-black">Nom<input required minLength={2} maxLength={60} value={value.name} onChange={event => setValue({ ...value, name: event.target.value })} className="mt-2 min-h-12 w-full rounded-xl border px-4"/></label><label className="text-sm font-black">Description<textarea maxLength={500} value={value.description} onChange={event => setValue({ ...value, description: event.target.value })} className="mt-2 min-h-28 w-full rounded-xl border p-4"/></label><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-black">Couleur<input type="color" value={value.color} onChange={event => setValue({ ...value, color: event.target.value.toUpperCase() })} className="mt-2 h-12 w-full cursor-pointer rounded-xl border bg-white p-1"/></label><div className="sm:col-span-2"><BadgePicker value={value.badge} onChange={badge => setValue({ ...value, badge })}/></div></div><div className="flex items-center gap-3 rounded-2xl border p-4"><span className="grid size-12 place-items-center rounded-xl text-xl" style={{ backgroundColor: `${value.color}20`, color: value.color }}>{value.badge || "🏷️"}</span><div><p className="font-black">{value.name || "Aperçu de la catégorie"}</p><p className="text-xs text-slate-500">Couleur et badge affichés dans les activités.</p></div></div><button className="min-h-12 rounded-xl bg-slate-950 font-black text-white">Enregistrer</button></div></form></Modal>; }
+}) {
+    const [value, setValue] = useState<FormValue>({ name: initial.name, description: initial.description || "", color: initial.color, badge: initial.badge });
+    return <Modal close={close} width="max-w-5xl">
+        <form onSubmit={event => { event.preventDefault(); submit(value); }} className="overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900 dark:text-white">
+            <div className="relative z-40 flex items-center justify-between border-b bg-white px-6 py-4 dark:border-white/10 dark:bg-slate-900 sm:px-8">
+                <div><p className="text-xs font-black uppercase tracking-[.18em] text-emerald-700 dark:text-emerald-300">Organisation</p><h2 className="mt-1 text-2xl font-black">{title}</h2></div>
+                <div className="group/close relative z-50">
+                    <button type="button" aria-label="Fermer" onClick={close} className="grid size-11 place-items-center overflow-hidden rounded-2xl bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-rose-400/15 dark:hover:text-rose-300 dark:focus-visible:ring-rose-400/20"><X /></button>
+                    <span aria-hidden="true" className="pointer-events-none absolute right-0 top-[calc(100%+.55rem)] z-[60] whitespace-nowrap rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-xl transition group-hover/close:opacity-100 group-focus-within/close:opacity-100 before:absolute before:-top-1 before:right-4 before:size-2 before:rotate-45 before:bg-slate-950">Fermer</span>
+                </div>
+            </div>
+            <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,.85fr)] lg:p-7">
+                <div className="space-y-5">
+                    <label className="block text-sm font-black">Nom<input required minLength={2} maxLength={60} value={value.name} onChange={event => setValue({ ...value, name: event.target.value })} className="mt-2 min-h-12 w-full rounded-xl border bg-background px-4 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-white/10 dark:focus:ring-emerald-500/15"/></label>
+                    <MarkdownEditor label="Description" value={value.description} onChange={description => setValue({ ...value, description })} maximumLength={500} minimumLength={0} required={false} compact help="Ajoutez du gras, des listes ou un court sous-titre, puis vérifiez le rendu."/>
+                </div>
+                <div className="space-y-4">
+                    <label className="block text-sm font-black">Couleur<input type="color" value={value.color} onChange={event => setValue({ ...value, color: event.target.value.toUpperCase() })} className="mt-2 h-12 w-full cursor-pointer rounded-xl border bg-background p-1 dark:border-white/10"/></label>
+                    <BadgePicker value={value.badge} onChange={badge => setValue({ ...value, badge })}/>
+                    <div className="flex items-center gap-3 rounded-2xl border bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[.04]"><span className="grid size-12 place-items-center rounded-xl text-xl" style={{ backgroundColor: `${value.color}20`, color: value.color }}>{value.badge || "🏷️"}</span><div className="min-w-0"><p className="truncate font-black">{value.name || "Aperçu de la catégorie"}</p><p className="text-xs text-slate-500 dark:text-slate-400">Couleur et badge affichés dans les activités.</p></div></div>
+                    <button className="min-h-12 w-full rounded-xl bg-slate-950 font-black text-white transition hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400">Enregistrer</button>
+                </div>
+            </div>
+        </form>
+    </Modal>;
+}
 function View({ item, close }: {
     item: Category;
     close: () => void;
-}) { return <Modal close={close}><div className="relative overflow-hidden p-8 text-center"><button onClick={close} className="absolute right-5 top-5 grid size-10 place-items-center rounded-xl bg-slate-100"><X /></button><span className="mx-auto grid size-20 place-items-center rounded-3xl text-4xl" style={{ backgroundColor: `${item.color}20`, color: item.color }}>{item.badge}</span><h2 className="mt-5 text-3xl font-black">{item.name}</h2><p className="mt-3 leading-7 text-slate-500">{item.description || "Aucune description."}</p><p className="mt-5 font-bold" style={{ color: item.color }}>{item.activityCount} activité{item.activityCount > 1 ? "s" : ""} associée{item.activityCount > 1 ? "s" : ""}</p></div></Modal>; }
+}) { return <Modal close={close}><div className="relative overflow-hidden p-8 text-center"><button onClick={close} className="absolute right-5 top-5 grid size-10 place-items-center rounded-xl bg-slate-100"><X /></button><span className="mx-auto grid size-20 place-items-center rounded-3xl text-4xl" style={{ backgroundColor: `${item.color}20`, color: item.color }}>{item.badge}</span><h2 className="mt-5 text-3xl font-black">{item.name}</h2>{item.description ? <MarkdownContent value={item.description} className="mt-3 text-left leading-7 text-slate-500"/> : <p className="mt-3 leading-7 text-slate-500">Aucune description.</p>}<p className="mt-5 font-bold" style={{ color: item.color }}>{item.activityCount} activité{item.activityCount > 1 ? "s" : ""} associée{item.activityCount > 1 ? "s" : ""}</p></div></Modal>; }
 function Confirm({ item, close, confirm }: {
     item: Category;
     close: () => void;

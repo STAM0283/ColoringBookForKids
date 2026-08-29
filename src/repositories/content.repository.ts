@@ -36,7 +36,15 @@ export const contentRepository = {
   },
 
   async bookCategories(language: ContentLanguage = "FR") {
-    return db.select({ name: categories.name, slug: categories.slug, color: categories.color }).from(categories).innerJoin(books, eq(books.categoryId, categories.id)).where(and(eq(books.published, true),eq(books.language,language),eq(categories.language,language))).groupBy(categories.id).orderBy(asc(categories.name));
+    const rows = await db.select({ name: categories.name, slug: categories.slug, color: categories.color })
+      .from(categories)
+      .where(and(eq(categories.language, language), inArray(categories.scope, ["BOOK", "ACTIVITY"])))
+      .orderBy(asc(categories.name));
+
+    // Le gestionnaire actuel partage les catégories d'activités avec les
+    // livres. Une ancienne catégorie BOOK peut donc avoir le même slug : le
+    // filtre public ne doit afficher qu'une seule option dans ce cas.
+    return [...new Map(rows.map(category => [category.slug, category])).values()];
   },
 
   async activities(options: ListingOptions = {}) {

@@ -53,7 +53,7 @@ export function AdminFormField({ label, children, hint, optional = false }: {
 
   return (
     <label
-      className="group block text-sm font-bold text-slate-700"
+      className="group block text-sm font-bold text-slate-700 dark:text-slate-100"
       onInput={(event) => {
         const target = event.target as HTMLInputElement | HTMLTextAreaElement;
         if (typeof target.value === "string") setTypedLength(target.value.length);

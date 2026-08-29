@@ -1,9 +1,9 @@
 import sharp from "sharp";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { activities, media } from "@/db/schema";
+import { activities, activityGallery, activityTypes, media } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 import { idList, replaceActivityCategories } from "@/lib/activity-relations";
 
@@ -14,6 +14,7 @@ const schema = z.object({
   published: z.boolean().optional(),
   accessLevel: z.enum(["PUBLIC", "CLUB"]).optional(),
   downloadEnabled: z.boolean().optional(),
+  activityTypeId: z.string().nullable().optional(),
 }).refine(value => Object.values(value).some(item => item !== undefined));
 
 async function admin(){return (await auth())?.user.role === "ADMIN";}
@@ -32,10 +33,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const selected = form.get("cover");
     cover = selected instanceof File && selected.size ? selected : null;
     categoryIds = idList(form.get("categoryIds"));
-    values = { title: form.get("title"), description: form.get("description"), accessLevel: form.get("accessLevel"), published: form.get("published") === "true", downloadEnabled: form.get("downloadEnabled") === "true" };
+    values = { title: form.get("title"), description: form.get("description"), activityTypeId:String(form.get("activityTypeId")||"")||null, accessLevel: form.get("accessLevel"), published: form.get("published") === "true", downloadEnabled: form.get("downloadEnabled") === "true" };
   } else values = await request.json().catch(() => null);
   const parsed = schema.safeParse(values);
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message || "Données invalides." }, { status: 400 });
+  if (parsed.data.activityTypeId) {
+    const expectedLanguage = parsed.data.language || current.language;
+    const [validType] = await db.select({ id: activityTypes.id }).from(activityTypes).where(and(eq(activityTypes.id, parsed.data.activityTypeId), eq(activityTypes.language, expectedLanguage))).limit(1);
+    if (!validType) return Response.json({ message: "Le type d’activité ne correspond pas à la langue de l’activité." }, { status: 400 });
+  }
 
   let previewMediaId = current.previewMediaId;
   let previousPreview: typeof media.$inferSelect | undefined;
@@ -49,7 +55,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   await db.update(activities).set({ ...parsed.data, previewMediaId, ...(parsed.data.published !== undefined ? { publishedAt: parsed.data.published ? (current.publishedAt || new Date()) : null } : {}), updatedAt: new Date() }).where(eq(activities.id, id));
   if (categoryIds) await replaceActivityCategories(id, categoryIds);
-  if (previousPreview) { await db.delete(media).where(eq(media.id, previousPreview.id)); await storageService.deleteFile(previousPreview.path).catch(() => undefined); }
+  if (previousPreview) {
+    const usedAsPage = await db.query.activityGallery.findFirst({ where: eq(activityGallery.mediaId, previousPreview.id) });
+    if (!usedAsPage) { await db.delete(media).where(eq(media.id, previousPreview.id)); await storageService.deleteFile(previousPreview.path).catch(() => undefined); }
+  }
   return Response.json({ message: "Activité modifiée avec succès." });
 }
 
@@ -58,7 +67,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const item = await db.query.activities.findFirst({ where: eq(activities.id, id) });
   if (!item) return Response.json({ message: "Activité introuvable." }, { status: 404 });
-  const mediaIds = [item.previewMediaId, item.pdfMediaId].filter((value): value is string => Boolean(value));
+  const gallery = await db.select({mediaId:activityGallery.mediaId}).from(activityGallery).where(eq(activityGallery.activityId,id));
+  const mediaIds = [...new Set([item.previewMediaId, item.pdfMediaId, ...gallery.map(page=>page.mediaId)].filter((value): value is string => Boolean(value)))];
   const linkedMedia = mediaIds.length ? await db.select().from(media).where(inArray(media.id, mediaIds)) : [];
   await db.delete(activities).where(eq(activities.id, id));
   if (mediaIds.length) await db.delete(media).where(inArray(media.id, mediaIds));

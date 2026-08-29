@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BookOpen, CircleHelp, FileText, Film, Heart, ImageIcon, KeyRound, LayoutDashboard, Palette, QrCode, ShieldCheck, Tags, type LucideIcon } from "lucide-react";
+import { Activity, BookOpen, CircleHelp, FileText, Film, Heart, ImageIcon, KeyRound, LayoutDashboard, ListTree, Palette, QrCode, ShieldCheck, Tags, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const groups: Array<{ label: string; links: Array<[string, string, LucideIcon]> }> = [
   { label: "Vue générale", links: [["Dashboard", "/admin", LayoutDashboard]] },
-  { label: "Contenu", links: [["Livres", "/admin/livres", BookOpen], ["Images", "/admin/images", ImageIcon], ["Coloriages", "/admin/coloriages", Palette], ["Personnages", "/admin/personnages", Heart], ["Vidéos", "/admin/videos", Film], ["Activités", "/admin/activites", Activity], ["Catégories", "/admin/categories", Tags], ["Blog", "/admin/blog", FileText]] },
+  { label: "Contenu", links: [["Livres", "/admin/livres", BookOpen], ["Images", "/admin/images", ImageIcon], ["Coloriages", "/admin/coloriages", Palette], ["Personnages", "/admin/personnages", Heart], ["Vidéos", "/admin/videos", Film], ["Activités", "/admin/activites", Activity], ["Types d’activités", "/admin/types-activites", ListTree], ["Catégories", "/admin/categories", Tags], ["Blog", "/admin/blog", FileText]] },
   { label: "Outils", links: [["Générateur QR", "/admin/qr-code", QrCode]] },
   { label: "Gestion", links: [["Codes d’accès", "/admin/codes-acces", KeyRound], ["Sécurité", "/admin/securite", ShieldCheck], ["Guide", "/admin/guide", CircleHelp]] },
 ];

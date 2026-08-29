@@ -2,10 +2,10 @@ import "server-only";
 import { and, asc, desc, eq, getTableColumns, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
-import { activities, bookGallery, books, categories, media, posts, vlogs } from "@/db/schema";
+import { activities, activityGallery, activityTypes, bookGallery, books, categories, media, posts, vlogs } from "@/db/schema";
 
 export type ContentLanguage = "FR" | "EN";
-export type ListingOptions = { page?: number; pageSize?: number; search?: string; category?: string; pricing?: "FREE" | "PAID"; sort?: "newest" | "oldest"; language?: ContentLanguage };
+export type ListingOptions = { page?: number; pageSize?: number; search?: string; category?: string; activityType?: string; pricing?: "FREE" | "PAID"; sort?: "newest" | "oldest"; language?: ContentLanguage };
 
 function bounds(options: ListingOptions) {
   const page = Math.max(1, options.page ?? 1);
@@ -48,12 +48,15 @@ export const contentRepository = {
   },
 
   async activities(options: ListingOptions = {}) {
-    const pagination = bounds(options), search=searchPattern(options.search), where = and(eq(activities.published, true),eq(activities.language,options.language??"FR"), search ? or(ilike(activities.title,search),ilike(activities.description,search)): undefined,options.category?sql`exists (select 1 from activity_categories ac inner join categories c on c.id=ac.category_id where ac.activity_id=${activities.id} and c.slug=${options.category} and c.language=${options.language??"FR"})`:undefined), pdf = alias(media, "activity_pdf"), preview = alias(media, "activity_preview"),dateOrder=options.sort==="oldest"?asc(activities.publishedAt):desc(activities.publishedAt);
+    const pagination = bounds(options), search=searchPattern(options.search), where = and(eq(activities.published, true),eq(activities.language,options.language??"FR"), search ? or(ilike(activities.title,search),ilike(activities.description,search)): undefined,options.category?sql`exists (select 1 from activity_categories ac inner join categories c on c.id=ac.category_id where ac.activity_id=${activities.id} and c.slug=${options.category} and c.language=${options.language??"FR"})`:undefined,options.activityType?eq(activityTypes.slug,options.activityType):undefined), pdf = alias(media, "activity_pdf"), preview = alias(media, "activity_preview"),dateOrder=options.sort==="oldest"?asc(activities.publishedAt):desc(activities.publishedAt);
     const [items, [{ count }]] = await Promise.all([
-      db.select({ ...getTableColumns(activities), pdfPath: pdf.path, previewPath: preview.path, previewAlt: preview.alt }).from(activities).leftJoin(pdf, eq(activities.pdfMediaId, pdf.id)).leftJoin(preview, eq(activities.previewMediaId, preview.id)).where(where).orderBy(desc(activities.featured), dateOrder).limit(pagination.pageSize).offset(pagination.offset),
-      db.select({ count: sql<number>`count(*)` }).from(activities).where(where),
+      db.select({ ...getTableColumns(activities), activityType:activityTypes, pdfPath: pdf.path, previewPath: preview.path, previewAlt: preview.alt }).from(activities).leftJoin(activityTypes,eq(activities.activityTypeId,activityTypes.id)).leftJoin(pdf, eq(activities.pdfMediaId, pdf.id)).leftJoin(preview, eq(activities.previewMediaId, preview.id)).where(where).orderBy(desc(activities.featured), dateOrder).limit(pagination.pageSize).offset(pagination.offset),
+      db.select({ count: sql<number>`count(*)` }).from(activities).leftJoin(activityTypes,eq(activities.activityTypeId,activityTypes.id)).where(where),
     ]);
-    return pageResult(pagination, items, Number(count));
+    const galleryRows = items.length ? await db.select({ activityId: activityGallery.activityId, path: media.path, alt: media.alt }).from(activityGallery).innerJoin(media, eq(activityGallery.mediaId, media.id)).where(inArray(activityGallery.activityId, items.map(item => item.id))).orderBy(asc(activityGallery.sortOrder)) : [];
+    const galleryByActivity = new Map<string, Array<{path:string;alt:string|null}>>();
+    for (const row of galleryRows) { const gallery = galleryByActivity.get(row.activityId) ?? []; gallery.push({path:row.path,alt:row.alt}); galleryByActivity.set(row.activityId,gallery); }
+    return pageResult(pagination, items.map(item => ({...item,gallery:galleryByActivity.get(item.id)??[]})), Number(count));
   },
 
   async posts(options: ListingOptions = {}) {
@@ -74,6 +77,7 @@ export const contentRepository = {
     return pageResult(pagination, items, Number(count));
   },
   async activityCategoryOptions(language:ContentLanguage="FR"){return db.select({name:categories.name,slug:categories.slug}).from(categories).where(and(eq(categories.language,language),sql`exists (select 1 from activity_categories ac inner join activities a on a.id=ac.activity_id where ac.category_id=${categories.id} and a.published=true and a.language=${language})`)).orderBy(asc(categories.name))},
+  async activityTypeOptions(language:ContentLanguage="FR"){return db.select({name:activityTypes.name,slug:activityTypes.slug}).from(activityTypes).where(eq(activityTypes.language,language)).orderBy(asc(activityTypes.sortOrder),asc(activityTypes.name))},
   async postCategoryOptions(language:ContentLanguage="FR"){return db.select({name:categories.name,slug:categories.slug}).from(categories).innerJoin(posts,eq(posts.categoryId,categories.id)).where(and(eq(posts.published,true),eq(posts.language,language),eq(categories.language,language))).groupBy(categories.id).orderBy(asc(categories.name))},
 };
 

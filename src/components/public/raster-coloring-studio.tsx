@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, LoaderCircle, Maximize2, Minus, Plus, Redo2, RotateCcw, Undo2, X } from "lucide-react";
 import { useViewportLock } from "@/hooks/use-viewport-lock";
 import { ExportColoringButtons } from "./export-coloring-buttons";
@@ -40,6 +40,17 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
   const [touchTarget, setTouchTarget] = useState<Point | null>(null);
   const [canvasDisplay, setCanvasDisplay] = useState<{ width: number; height: number } | null>(null);
 
+  const setView = useCallback((nextZoom: number, nextPan: Point) => {
+    const safeZoom = Math.max(1, Math.min(5, nextZoom));
+    const safePan = clampPan(nextPan, safeZoom, viewport.current);
+    zoomRef.current = safeZoom;
+    panRef.current = safePan;
+    setZoom(safeZoom);
+    setPan(safePan);
+  }, []);
+
+  const fitDrawing = useCallback(() => setView(1, { x: 0, y: 0 }), [setView]);
+
   useEffect(() => {
     setCanvasDisplay(null);
     setLoading(true);
@@ -65,7 +76,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     };
     image.onerror = () => setMessage(en ? "The image could not be loaded." : "Impossible de charger l’image.");
     image.src = `/media/${imagePath}`;
-  }, [imagePath, en]);
+  }, [imagePath, en, fitDrawing]);
 
   useEffect(() => {
     const frame = viewport.current;
@@ -86,7 +97,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     const observer = new ResizeObserver(resize);
     observer.observe(frame);
     return () => observer.disconnect();
-  }, [loading]);
+  }, [loading, setView]);
 
   function paintAt(clientX: number, clientY: number, vibrate = false) {
     const target = canvas.current, context = target?.getContext("2d", { willReadFrequently:true });
@@ -107,17 +118,6 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     setMessage("");
     if (vibrate && "vibrate" in navigator) navigator.vibrate(12);
   }
-
-  function setView(nextZoom: number, nextPan: Point) {
-    const safeZoom = Math.max(1, Math.min(5, nextZoom));
-    const safePan = clampPan(nextPan, safeZoom, viewport.current);
-    zoomRef.current = safeZoom;
-    panRef.current = safePan;
-    setZoom(safeZoom);
-    setPan(safePan);
-  }
-
-  function fitDrawing() { setView(1, { x: 0, y: 0 }); }
 
   function zoomAt(nextZoom: number, clientPoint?: Point) {
     const frame = viewport.current?.getBoundingClientRect();

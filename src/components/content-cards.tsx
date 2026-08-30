@@ -20,10 +20,10 @@ export function BookCard({ item, category, coverPath, gallery = [], index = 0,lo
 
 export function ActivityCard({ item, index = 0, clubUnlocked = false,locale="fr" }: { item: { id: string; title: string; description: string; pageCount: number | null; accessLevel: "PUBLIC" | "CLUB"; downloadEnabled: boolean; previewPath?: string | null; previewAlt?: string | null; gallery?: Array<{path:string;alt:string|null}>; activityType?:{name:string;color:string;badge:string}|null; categories?:Array<{name:string;color:string;badge:string}> }; index?: number; clubUnlocked?: boolean;locale?:Locale }) {
   const en=locale==="en";
-  const gallery = [
-    ...(item.previewPath ? [{ path: item.previewPath, alt: item.previewAlt ?? null }] : []),
-    ...(item.gallery ?? []),
-  ].filter((image, position, images) => images.findIndex(candidate => candidate.path === image.path) === position);
+  const pages = item.gallery ?? [];
+  const gallery = item.previewPath
+    ? [{ path: item.previewPath, alt: item.previewAlt ?? null }, ...pages.slice(1)]
+    : pages;
   return <Card className="group flex h-full flex-col overflow-hidden dark:border-white/10"><div className={`relative aspect-[4/3] ${colors[(index + 1) % 4]} grid place-items-center overflow-hidden`}>{gallery.length?<ActivityImageCarousel images={gallery} title={item.title} locale={locale}/>:<span className="text-7xl transition group-hover:scale-110">{["✏️", "🧩", "🔎", "🦁"][index % 4]}</span>}</div><div className="flex flex-1 flex-col p-5"><div className="flex flex-wrap gap-2">{item.activityType&&<span className="rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide" style={{backgroundColor:`${item.activityType.color}20`,color:item.activityType.color}}>{item.activityType.badge} {item.activityType.name}</span>}{item.categories?.map(category=><span key={`${category.name}-${category.badge}`} title={category.name} className="inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide" style={{backgroundColor:`${category.color}20`,color:category.color}}><span aria-hidden="true">{category.badge}</span><span className="truncate">{category.name}</span></span>)}<Badge>{en?"Free":"Gratuit"} · {item.pageCount ?? 1} pages</Badge>{item.accessLevel === "CLUB" && <Badge>Instagram Club</Badge>}</div><ActivityDescriptionToggle title={item.title} description={item.description} locale={locale}/><div className="mt-auto"><ClubDownloadButton locale={locale} activityId={item.id} clubOnly={item.accessLevel === "CLUB"} unlocked={clubUnlocked} enabled={item.downloadEnabled}/></div></div></Card>;
 }
 

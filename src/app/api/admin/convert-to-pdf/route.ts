@@ -35,11 +35,14 @@ export async function POST(request: Request) {
     const stored = await storageService.uploadFile(file, "PDF");
     const mediaId = crypto.randomUUID(), activityId = crypto.randomUUID();
     await db.insert(media).values({ id: mediaId, type: "PDF", filename: stored.filename, originalName: filename, mimeType: "application/pdf", size: stored.size, path: stored.path, alt: title });
-    const pages: Array<{ id: string; path: string }> = [];
+    const pages: Array<{ id: string; path: string; modelId: string | null }> = [];
     for (const [index, image] of images.entries()) {
       const page = await storageService.uploadFile(image, "IMAGE"), id = crypto.randomUUID();
       await db.insert(media).values({ id, type: "IMAGE", filename: page.filename, originalName: image.name, mimeType: page.mimeType, size: page.size, path: page.path, alt: `Page ${index + 1} de ${title}`, language });
-      pages.push({ id, path: page.path });
+      const requestedModel=form.get(`model-${index}`);
+      let modelId:string|null=null;
+      if(requestedModel instanceof File&&requestedModel.size){const storedModel=await storageService.uploadFile(requestedModel,"IMAGE");modelId=crypto.randomUUID();await db.insert(media).values({id:modelId,type:"IMAGE",filename:storedModel.filename,originalName:requestedModel.name,mimeType:storedModel.mimeType,size:storedModel.size,path:storedModel.path,alt:`Modèle de la page ${index+1} de ${title}`,language})}
+      pages.push({ id, path: page.path, modelId });
     }
     let previewMediaId = pages[0].id;
     if (cover) {
@@ -48,7 +51,7 @@ export async function POST(request: Request) {
       await db.insert(media).values({ id: previewMediaId, type: "IMAGE", filename: previewStored.filename, originalName: cover.name, mimeType: previewStored.mimeType, size: previewStored.size, path: previewStored.path, alt: `Couverture de ${title}`, language });
     }
     await db.insert(activities).values({ id: activityId, language, title, slug: `${slugify(title) || "activite"}-${activityId.slice(0, 6)}`, description, activityTypeId, previewMediaId, pdfMediaId: mediaId, pageCount: images.length, accessLevel, published: true, publishedAt: new Date() });
-    await db.insert(activityGallery).values(pages.map((page, sortOrder) => ({ id: crypto.randomUUID(), activityId, mediaId: page.id, sortOrder })));
+    await db.insert(activityGallery).values(pages.map((page, sortOrder) => ({ id: crypto.randomUUID(), activityId, mediaId: page.id, modelMediaId:page.modelId,sortOrder })));
     await replaceActivityCategories(activityId, idList(form.get("categoryIds")));
     revalidatePath("/");
     revalidatePath("/activites");

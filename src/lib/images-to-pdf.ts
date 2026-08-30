@@ -3,13 +3,14 @@ import sharp from "sharp";
 type PdfImage={data:Buffer;width:number;height:number};
 export async function imagesToPdf(files:File[]){const images:PdfImage[]=[];for(const file of files){const pipeline=sharp(Buffer.from(await file.arrayBuffer())).rotate().flatten({background:"#ffffff"}).jpeg({quality:92,mozjpeg:true});const {data,info}=await pipeline.toBuffer({resolveWithObject:true});images.push({data,width:info.width,height:info.height})}return buildPdf(images)}
 
-export async function imagesWithModelToPdf(pageBuffers:Buffer[],modelBuffer:Buffer){
+export async function imagesWithModelsToPdf(entries:Array<{page:Buffer;model:Buffer|null}>){
   const composed:PdfImage[]=[];
-  for(const pageBuffer of pageBuffers){
+  for(const entry of entries){
     const canvasWidth=1240,canvasHeight=1754,margin=36;
-    const page=await sharp(pageBuffer).rotate().flatten({background:"#ffffff"}).resize({width:canvasWidth-margin*2,height:canvasHeight-margin*2,fit:"inside",withoutEnlargement:false}).png().toBuffer({resolveWithObject:true});
-    const model=await sharp(modelBuffer).rotate().flatten({background:"#ffffff"}).resize({width:Math.round(canvasWidth*.23),height:Math.round(canvasHeight*.23),fit:"inside",withoutEnlargement:false}).extend({top:8,bottom:8,left:8,right:8,background:"#ffffff"}).jpeg({quality:94,mozjpeg:true}).toBuffer({resolveWithObject:true});
-    const rendered=await sharp({create:{width:canvasWidth,height:canvasHeight,channels:3,background:"#ffffff"}}).composite([{input:page.data,left:Math.round((canvasWidth-page.info.width)/2),top:Math.round((canvasHeight-page.info.height)/2)},{input:model.data,left:canvasWidth-model.info.width-margin,top:margin}]).jpeg({quality:92,mozjpeg:true}).toBuffer({resolveWithObject:true});
+    const page=await sharp(entry.page).rotate().flatten({background:"#ffffff"}).resize({width:canvasWidth-margin*2,height:canvasHeight-margin*2,fit:"inside",withoutEnlargement:false}).png().toBuffer({resolveWithObject:true});
+    const layers:Array<{input:Buffer;left:number;top:number}>=[{input:page.data,left:Math.round((canvasWidth-page.info.width)/2),top:Math.round((canvasHeight-page.info.height)/2)}];
+    if(entry.model){const model=await sharp(entry.model).rotate().flatten({background:"#ffffff"}).resize({width:Math.round(canvasWidth*.23),height:Math.round(canvasHeight*.23),fit:"inside",withoutEnlargement:false}).extend({top:8,bottom:8,left:8,right:8,background:"#ffffff"}).jpeg({quality:94,mozjpeg:true}).toBuffer({resolveWithObject:true});layers.push({input:model.data,left:canvasWidth-model.info.width,top:0})}
+    const rendered=await sharp({create:{width:canvasWidth,height:canvasHeight,channels:3,background:"#ffffff"}}).composite(layers).jpeg({quality:92,mozjpeg:true}).toBuffer({resolveWithObject:true});
     composed.push({data:rendered.data,width:rendered.info.width,height:rendered.info.height});
   }
   return buildPdf(composed);

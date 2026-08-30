@@ -48,18 +48,18 @@ export const contentRepository = {
   },
 
   async activities(options: ListingOptions = {}) {
-    const pagination = bounds(options), search=searchPattern(options.search), where = and(eq(activities.published, true),eq(activities.language,options.language??"FR"), search ? or(ilike(activities.title,search),ilike(activities.description,search)): undefined,options.category?sql`exists (select 1 from activity_categories ac inner join categories c on c.id=ac.category_id where ac.activity_id=${activities.id} and c.slug=${options.category} and c.language=${options.language??"FR"})`:undefined,options.activityType?eq(activityTypes.slug,options.activityType):undefined), pdf = alias(media, "activity_pdf"), preview = alias(media, "activity_preview"),dateOrder=options.sort==="oldest"?asc(activities.publishedAt):desc(activities.publishedAt);
+    const pagination = bounds(options), search=searchPattern(options.search), where = and(eq(activities.published, true),eq(activities.language,options.language??"FR"), search ? or(ilike(activities.title,search),ilike(activities.description,search)): undefined,options.category?sql`exists (select 1 from activity_categories ac inner join categories c on c.id=ac.category_id where ac.activity_id=${activities.id} and c.slug=${options.category} and c.language=${options.language??"FR"})`:undefined,options.activityType?eq(activityTypes.slug,options.activityType):undefined), pdf = alias(media, "activity_pdf"), preview = alias(media, "activity_preview"),pageModel=alias(media,"activity_page_model"),dateOrder=options.sort==="oldest"?asc(activities.publishedAt):desc(activities.publishedAt);
     const [items, [{ count }]] = await Promise.all([
       db.select({ ...getTableColumns(activities), activityType:activityTypes, pdfPath: pdf.path, previewPath: preview.path, previewAlt: preview.alt }).from(activities).leftJoin(activityTypes,eq(activities.activityTypeId,activityTypes.id)).leftJoin(pdf, eq(activities.pdfMediaId, pdf.id)).leftJoin(preview, eq(activities.previewMediaId, preview.id)).where(where).orderBy(desc(activities.featured), dateOrder).limit(pagination.pageSize).offset(pagination.offset),
       db.select({ count: sql<number>`count(*)` }).from(activities).leftJoin(activityTypes,eq(activities.activityTypeId,activityTypes.id)).where(where),
     ]);
     const activityIds = items.map(item => item.id);
     const [galleryRows, categoryRows] = items.length ? await Promise.all([
-      db.select({ activityId: activityGallery.activityId, path: media.path, alt: media.alt }).from(activityGallery).innerJoin(media, eq(activityGallery.mediaId, media.id)).where(inArray(activityGallery.activityId, activityIds)).orderBy(asc(activityGallery.sortOrder)),
+      db.select({ activityId: activityGallery.activityId, path: media.path, alt: media.alt,modelPath:pageModel.path }).from(activityGallery).innerJoin(media, eq(activityGallery.mediaId, media.id)).leftJoin(pageModel,eq(activityGallery.modelMediaId,pageModel.id)).where(inArray(activityGallery.activityId, activityIds)).orderBy(asc(activityGallery.sortOrder)),
       db.select({ activityId: activityCategories.activityId, name: categories.name, color: categories.color, badge: categories.badge }).from(activityCategories).innerJoin(categories, eq(activityCategories.categoryId, categories.id)).where(inArray(activityCategories.activityId, activityIds)).orderBy(asc(categories.sortOrder), asc(categories.name)),
     ]) : [[], []];
-    const galleryByActivity = new Map<string, Array<{path:string;alt:string|null}>>();
-    for (const row of galleryRows) { const gallery = galleryByActivity.get(row.activityId) ?? []; gallery.push({path:row.path,alt:row.alt}); galleryByActivity.set(row.activityId,gallery); }
+    const galleryByActivity = new Map<string, Array<{path:string;alt:string|null;modelPath:string|null}>>();
+    for (const row of galleryRows) { const gallery = galleryByActivity.get(row.activityId) ?? []; gallery.push({path:row.path,alt:row.alt,modelPath:row.modelPath}); galleryByActivity.set(row.activityId,gallery); }
     const categoriesByActivity = new Map<string, Array<{name:string;color:string;badge:string}>>();
     for (const row of categoryRows) { const list = categoriesByActivity.get(row.activityId) ?? []; list.push({name:row.name,color:row.color,badge:row.badge}); categoriesByActivity.set(row.activityId,list); }
     return pageResult(pagination, items.map(item => ({...item,gallery:galleryByActivity.get(item.id)??[],categories:categoriesByActivity.get(item.id)??[]})), Number(count));

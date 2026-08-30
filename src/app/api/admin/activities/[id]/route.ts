@@ -29,11 +29,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   let values: unknown;
   let cover: File | null = null;
   let categoryIds: string[] | null = null;
+  let multipartForm:FormData|null=null;
+  let removedModelIds:string[]=[];
   if (multipart) {
     const form = await request.formData();
+    multipartForm=form;
     const selected = form.get("cover");
     cover = selected instanceof File && selected.size ? selected : null;
     categoryIds = idList(form.get("categoryIds"));
+    removedModelIds=idList(form.get("removedModelIds"));
     values = { title: form.get("title"), description: form.get("description"), activityTypeId:String(form.get("activityTypeId")||"")||null, accessLevel: form.get("accessLevel"), published: form.get("published") === "true", downloadEnabled: form.get("downloadEnabled") === "true" };
   } else values = await request.json().catch(() => null);
   const parsed = schema.safeParse(values);
@@ -56,6 +60,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   await db.update(activities).set({ ...parsed.data, previewMediaId, ...(parsed.data.published !== undefined ? { publishedAt: parsed.data.published ? (current.publishedAt || new Date()) : null } : {}), updatedAt: new Date() }).where(eq(activities.id, id));
   if (categoryIds) await replaceActivityCategories(id, categoryIds);
+  if(multipartForm){
+    const pages=await db.select().from(activityGallery).where(eq(activityGallery.activityId,id));
+    for(const page of pages){
+      const selected=multipartForm.get(`model-${page.id}`),removeModel=removedModelIds.includes(page.id)||multipartForm.get(`remove-model-${page.id}`)==="true";
+      if(!(selected instanceof File&&selected.size)&&!removeModel)continue;
+      const previousModel=page.modelMediaId?await db.query.media.findFirst({where:eq(media.id,page.modelMediaId)}):undefined;
+      let modelMediaId:string|null=removeModel?null:page.modelMediaId;
+      if(selected instanceof File&&selected.size){await storageService.validateFile(selected,"IMAGE");const meta=await sharp(Buffer.from(await selected.arrayBuffer())).metadata(),stored=await storageService.uploadFile(selected,"IMAGE");modelMediaId=crypto.randomUUID();await db.insert(media).values({id:modelMediaId,type:"IMAGE",filename:stored.filename,originalName:selected.name,mimeType:stored.mimeType,size:stored.size,width:meta.width,height:meta.height,path:stored.path,alt:`Modèle de ${parsed.data.title||current.title}`,language:current.language})}
+      await db.update(activityGallery).set({modelMediaId}).where(eq(activityGallery.id,page.id));
+      if(previousModel&&previousModel.id!==modelMediaId){await db.delete(media).where(eq(media.id,previousModel.id));await storageService.deleteFile(previousModel.path).catch(()=>undefined)}
+    }
+  }
   if (previousPreview) {
     const usedAsPage = await db.query.activityGallery.findFirst({ where: eq(activityGallery.mediaId, previousPreview.id) });
     if (!usedAsPage) { await db.delete(media).where(eq(media.id, previousPreview.id)); await storageService.deleteFile(previousPreview.path).catch(() => undefined); }
@@ -69,8 +85,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const item = await db.query.activities.findFirst({ where: eq(activities.id, id) });
   if (!item) return Response.json({ message: "Activité introuvable." }, { status: 404 });
-  const gallery = await db.select({mediaId:activityGallery.mediaId}).from(activityGallery).where(eq(activityGallery.activityId,id));
-  const mediaIds = [...new Set([item.previewMediaId, item.pdfMediaId, ...gallery.map(page=>page.mediaId)].filter((value): value is string => Boolean(value)))];
+  const gallery = await db.select({mediaId:activityGallery.mediaId,modelMediaId:activityGallery.modelMediaId}).from(activityGallery).where(eq(activityGallery.activityId,id));
+  const mediaIds = [...new Set([item.previewMediaId, item.pdfMediaId, ...gallery.flatMap(page=>[page.mediaId,page.modelMediaId])].filter((value): value is string => Boolean(value)))];
   const linkedMedia = mediaIds.length ? await db.select().from(media).where(inArray(media.id, mediaIds)) : [];
   await db.delete(activities).where(eq(activities.id, id));
   if (mediaIds.length) await db.delete(media).where(inArray(media.id, mediaIds));

@@ -1,8 +1,8 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { activities, activityTypes, media } from "@/db/schema";
+import { activities, activityGallery, activityTypes, media } from "@/db/schema";
 import { activityCategoryMap, activityCategoryOptions } from "@/lib/activity-relations";
 
 export async function GET() {
@@ -14,6 +14,8 @@ export async function GET() {
     .leftJoin(pdf, eq(activities.pdfMediaId, pdf.id))
     .leftJoin(preview, eq(activities.previewMediaId, preview.id))
     .orderBy(desc(activities.updatedAt));
-  const [categoryMap, categoryOptions,typeOptions] = await Promise.all([activityCategoryMap(items.map(item => item.activity.id)), activityCategoryOptions(),db.select().from(activityTypes).orderBy(activityTypes.language,activityTypes.sortOrder,activityTypes.name)]);
-  return Response.json({ items: items.map(item => ({ ...item, categoryIds: categoryMap.get(item.activity.id) || [] })), categoryOptions,typeOptions });
+  const activityIds=items.map(item=>item.activity.id),page=alias(media,"activity_admin_page"),model=alias(media,"activity_admin_model");
+  const [categoryMap, categoryOptions,typeOptions,pages] = await Promise.all([activityCategoryMap(activityIds), activityCategoryOptions(),db.select().from(activityTypes).orderBy(activityTypes.language,activityTypes.sortOrder,activityTypes.name),activityIds.length?db.select({id:activityGallery.id,activityId:activityGallery.activityId,path:page.path,alt:page.alt,modelMediaId:activityGallery.modelMediaId,modelPath:model.path,modelAlt:model.alt}).from(activityGallery).innerJoin(page,eq(activityGallery.mediaId,page.id)).leftJoin(model,eq(activityGallery.modelMediaId,model.id)).where(inArray(activityGallery.activityId,activityIds)).orderBy(asc(activityGallery.sortOrder)):Promise.resolve([])]);
+  const pagesByActivity=new Map<string,typeof pages>();for(const item of pages){const list=pagesByActivity.get(item.activityId)??[];list.push(item);pagesByActivity.set(item.activityId,list)}
+  return Response.json({ items: items.map(item => ({ ...item, categoryIds: categoryMap.get(item.activity.id) || [],pages:pagesByActivity.get(item.activity.id)||[] })), categoryOptions,typeOptions });
 }

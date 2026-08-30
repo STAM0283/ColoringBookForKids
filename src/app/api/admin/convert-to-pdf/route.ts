@@ -15,11 +15,13 @@ export async function POST(request: Request) {
   const images = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
   const requestedCover = form.get("cover");
   const cover = requestedCover instanceof File && requestedCover.size > 0 ? requestedCover : null;
-  const title = String(form.get("title") || "document").trim();
-  const description = String(form.get("description") || `Activité gratuite à imprimer : ${title}.`).trim();
+  const title = String(form.get("title") || "").trim();
+  const description = String(form.get("description") || "").trim();
   const accessLevel = form.get("accessLevel") === "CLUB" ? "CLUB" : "PUBLIC";
   const language = form.get("language") === "EN" ? "EN" : "FR";
   const activityTypeId = String(form.get("activityTypeId") || "") || null;
+  if (title.length < 2 || title.length > 150) return Response.json({ message: "Le titre doit contenir entre 2 et 150 caractères." }, { status: 400 });
+  if (description.length < 10 || description.length > 2000) return Response.json({ message: "La description doit contenir entre 10 et 2 000 caractères." }, { status: 400 });
   if (!images.length) return Response.json({ message: "Sélectionnez au moins une image." }, { status: 400 });
   if (images.length > 30) return Response.json({ message: "Le document est limité à 30 images." }, { status: 400 });
   if (activityTypeId) {

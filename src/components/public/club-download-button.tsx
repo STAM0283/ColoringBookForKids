@@ -7,7 +7,7 @@ import { CheckCircle2, Download, Instagram, LoaderCircle, LockKeyhole, X } from 
 import { INSTAGRAM_URL } from "@/lib/site-config";
 import type { Locale } from "@/lib/i18n";
 
-export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, locale = "fr" }: { activityId: string; clubOnly: boolean; unlocked: boolean; enabled: boolean; locale?: Locale }) {
+export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, hasModel=false, locale = "fr" }: { activityId: string; clubOnly: boolean; unlocked: boolean; enabled: boolean; hasModel?:boolean;locale?: Locale }) {
   const en = locale === "en";
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -15,8 +15,9 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, lo
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [locallyUnlocked, setLocallyUnlocked] = useState(false);
+  const [includeModel,setIncludeModel]=useState(false);
   const router = useRouter();
-  const downloadUrl = `/api/activities/${activityId}/download`;
+  const downloadUrl = `/api/activities/${activityId}/download${includeModel?"?model=1":""}`;
   const instagramUrl = INSTAGRAM_URL;
 
   useEffect(() => {
@@ -38,8 +39,9 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, lo
     return () => { active = false; };
   }, [clubOnly, unlocked]);
 
+  const modelOption=hasModel?<label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[.025] px-3 py-2.5 text-sm font-semibold text-foreground/75 dark:bg-white/[.035]"><input type="checkbox" checked={includeModel} onChange={event=>{const checked=event.target.checked;setIncludeModel(checked);window.dispatchEvent(new CustomEvent("activity-model-option",{detail:{activityId,includeModel:checked}}))}} className="size-4 accent-emerald-600"/><span>{en?"PDF with color model":"PDF avec modèle en couleur"}</span></label>:null;
   if (!enabled) return <span className="mt-4 inline-flex items-center gap-2 font-bold text-slate-400 dark:text-slate-300"><LockKeyhole size={17}/> {en ? "Download unavailable" : "Téléchargement indisponible"}</span>;
-  if (!clubOnly || unlocked || locallyUnlocked) return <a href={downloadUrl} className="mt-4 inline-flex items-center gap-2 font-bold text-primary"><Download size={17}/> {en ? "Download" : "Télécharger"}</a>;
+  if (!clubOnly || unlocked || locallyUnlocked) return <div>{modelOption}<a href={downloadUrl} className={`${hasModel?"mt-3":"mt-4"} inline-flex items-center gap-2 font-bold text-primary`}><Download size={17}/> {en ? "Download" : "Télécharger"}</a></div>;
 
   async function activate(event: React.FormEvent) {
     event.preventDefault();
@@ -83,5 +85,5 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, lo
       </div>
     </div>, document.body) : null;
 
-  return <><button onClick={() => setOpen(true)} className="mt-4 inline-flex items-center gap-2 font-bold text-primary"><LockKeyhole size={17}/> {en ? "Unlock for free" : "Débloquer gratuitement"}</button>{dialog}</>;
+  return <><div>{modelOption}<button onClick={() => setOpen(true)} className={`${hasModel?"mt-3":"mt-4"} inline-flex items-center gap-2 font-bold text-primary`}><LockKeyhole size={17}/> {en ? "Unlock for free" : "Débloquer gratuitement"}</button></div>{dialog}</>;
 }

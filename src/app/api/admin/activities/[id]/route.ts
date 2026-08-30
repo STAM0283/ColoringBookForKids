@@ -58,8 +58,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   let previewMediaId = current.previewMediaId;
   let previousPreview: typeof media.$inferSelect | undefined;
-  if(removeCover&&!cover&&current.previewMediaId){previousPreview=await db.query.media.findFirst({where:eq(media.id,current.previewMediaId)});previewMediaId=null}
-  if (cover) {
+  if(removeCover&&current.previewMediaId){previousPreview=await db.query.media.findFirst({where:eq(media.id,current.previewMediaId)});previewMediaId=null}
+  if (cover && !removeCover) {
     previousPreview = current.previewMediaId ? await db.query.media.findFirst({ where: eq(media.id, current.previewMediaId) }) : undefined;
     await storageService.validateFile(cover, "IMAGE");
     const meta = await sharp(Buffer.from(await cover.arrayBuffer())).metadata();

@@ -17,6 +17,7 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
   const [locallyUnlocked, setLocallyUnlocked] = useState(false);
   const [includeModel,setIncludeModel]=useState(false);
   const [requestedAction,setRequestedAction]=useState<"download"|"print">("download");
+  const [busyAction,setBusyAction]=useState<"download"|"print"|null>(null);
   const router = useRouter();
   const query=includeModel?"?model=1":"";
   const downloadUrl = `/api/activities/${activityId}/download${query}`;
@@ -42,9 +43,66 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
     return () => { active = false; };
   }, [clubOnly, unlocked]);
 
+  function triggerDownload() {
+    setError("");
+    setBusyAction("download");
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => setBusyAction(null), 900);
+  }
+
+  async function triggerPrint() {
+    setError("");
+    setBusyAction("print");
+    try {
+      const response = await fetch(printUrl, { cache: "no-store", credentials: "same-origin" });
+      if (!response.ok) throw new Error(en ? "Unable to prepare the document." : "Impossible de préparer le document.");
+      const pdfUrl = URL.createObjectURL(await response.blob());
+      const frame = document.createElement("iframe");
+      frame.title = en ? "Document to print" : "Document à imprimer";
+      frame.setAttribute("aria-hidden", "true");
+      frame.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
+      frame.src = pdfUrl;
+      frame.onload = () => {
+        window.setTimeout(() => {
+          try {
+            frame.contentWindow?.focus();
+            frame.contentWindow?.print();
+          } finally {
+            setBusyAction(null);
+          }
+        }, 250);
+      };
+      document.body.appendChild(frame);
+      window.setTimeout(() => {
+        frame.remove();
+        URL.revokeObjectURL(pdfUrl);
+        setBusyAction(null);
+      }, 60_000);
+    } catch (cause) {
+      setBusyAction(null);
+      setError(cause instanceof Error ? cause.message : (en ? "Printing failed." : "L’impression a échoué."));
+    }
+  }
+
   const modelOption=<label className={`mt-4 flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[.025] px-3 py-2.5 text-sm font-semibold dark:bg-white/[.035] ${hasModel?"cursor-pointer text-foreground/75":"cursor-not-allowed text-foreground/40"}`}><input type="checkbox" disabled={!hasModel} checked={includeModel} onChange={event=>{const checked=event.target.checked;setIncludeModel(checked);window.dispatchEvent(new CustomEvent("activity-model-option",{detail:{activityId,includeModel:checked}}))}} className="size-4 accent-emerald-600 disabled:opacity-40"/><span>{hasModel?(en?"PDF with color models":"PDF avec modèles en couleur"):(en?"No color model available":"Aucun modèle couleur disponible")}</span></label>;
+
+  const actionButtons = (locked: boolean) => <div className="mt-3 grid grid-cols-2 gap-2.5">
+    <button type="button" disabled={busyAction !== null} onClick={() => locked ? (setRequestedAction("download"), setOpen(true)) : triggerDownload()} className="group flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-3 font-black text-white shadow-lg shadow-emerald-700/20 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-xl active:translate-y-0 active:scale-[.97] disabled:pointer-events-none disabled:opacity-60 dark:bg-emerald-500 dark:text-slate-950 dark:shadow-emerald-950/35 dark:hover:bg-emerald-400">
+      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/15 dark:bg-slate-950/10">{busyAction === "download" ? <LoaderCircle className="animate-spin" size={18}/> : locked ? <LockKeyhole size={18}/> : <Download size={18}/>}</span>
+      <span className="text-sm sm:text-base">{locked ? (en ? "Unlock & download" : "Débloquer") : (en ? "Download" : "Télécharger")}</span>
+    </button>
+    <button type="button" disabled={busyAction !== null} onClick={() => locked ? (setRequestedAction("print"), setOpen(true)) : void triggerPrint()} className="group flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-emerald-600/25 bg-emerald-50 px-3 py-3 font-black text-emerald-800 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-500/45 hover:bg-emerald-100 hover:shadow-md active:translate-y-0 active:scale-[.97] disabled:pointer-events-none disabled:opacity-60 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-300 dark:hover:border-emerald-300/35 dark:hover:bg-emerald-400/15">
+      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-emerald-600/10 dark:bg-emerald-300/10">{busyAction === "print" ? <LoaderCircle className="animate-spin" size={18}/> : <Printer size={18}/>}</span>
+      <span className="text-sm sm:text-base">{locked ? (en ? "Unlock & print" : "Débloquer & imprimer") : (en ? "Print" : "Imprimer")}</span>
+    </button>
+  </div>;
+
   if (!enabled) return <span className="mt-4 inline-flex items-center gap-2 font-bold text-slate-400 dark:text-slate-300"><LockKeyhole size={17}/> {en ? "Download unavailable" : "Téléchargement indisponible"}</span>;
-  if (!clubOnly || unlocked || locallyUnlocked) return <div>{modelOption}<div className="mt-3 flex flex-wrap gap-4"><a href={downloadUrl} className="inline-flex items-center gap-2 font-bold text-primary"><Download size={17}/> {en ? "Download" : "Télécharger"}</a><a href={printUrl} target="_blank" rel="noopener" className="inline-flex items-center gap-2 font-bold text-primary"><Printer size={17}/> {en ? "Print" : "Imprimer"}</a></div></div>;
+  if (!clubOnly || unlocked || locallyUnlocked) return <div>{modelOption}{actionButtons(false)}{error && <p role="alert" className="mt-2 text-sm font-bold text-red-600 dark:text-red-400">{error}</p>}</div>;
 
   async function activate(event: React.FormEvent) {
     event.preventDefault();
@@ -58,13 +116,8 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       setLocallyUnlocked(true);
       setOpen(false);
       router.refresh();
-      const link = document.createElement("a");
-      link.href = requestedAction==="print"?printUrl:downloadUrl;
-      if(requestedAction==="print")link.target="_blank";
-      link.download = "";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      if (requestedAction === "print") void triggerPrint();
+      else triggerDownload();
     }, 900);
   }
 
@@ -89,5 +142,5 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       </div>
     </div>, document.body) : null;
 
-  return <><div>{modelOption}<div className="mt-3 flex flex-wrap gap-4"><button onClick={() => {setRequestedAction("download");setOpen(true)}} className="inline-flex items-center gap-2 font-bold text-primary"><LockKeyhole size={17}/> {en ? "Unlock & download" : "Débloquer et télécharger"}</button><button onClick={() => {setRequestedAction("print");setOpen(true)}} className="inline-flex items-center gap-2 font-bold text-primary"><Printer size={17}/> {en ? "Unlock & print" : "Débloquer et imprimer"}</button></div></div>{dialog}</>;
+  return <><div>{modelOption}{actionButtons(true)}</div>{dialog}</>;
 }

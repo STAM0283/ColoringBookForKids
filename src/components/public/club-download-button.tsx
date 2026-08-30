@@ -57,32 +57,35 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
   async function triggerPrint() {
     setError("");
     setBusyAction("print");
+    const printWindow = window.open("about:blank", "_blank");
+    if (!printWindow) {
+      setBusyAction(null);
+      setError(en ? "Allow pop-ups to open the print window." : "Autorisez les fenêtres contextuelles pour ouvrir l’impression.");
+      return;
+    }
+    printWindow.document.title = en ? "Preparing document…" : "Préparation du document…";
+    printWindow.document.body.innerHTML = `<main style="min-height:100vh;display:grid;place-items:center;font:600 16px system-ui;color:#334155"><p>${en ? "Preparing the print preview…" : "Préparation de l’aperçu avant impression…"}</p></main>`;
     try {
       const response = await fetch(printUrl, { cache: "no-store", credentials: "same-origin" });
       if (!response.ok) throw new Error(en ? "Unable to prepare the document." : "Impossible de préparer le document.");
       const pdfUrl = URL.createObjectURL(await response.blob());
-      const frame = document.createElement("iframe");
-      frame.title = en ? "Document to print" : "Document à imprimer";
-      frame.setAttribute("aria-hidden", "true");
-      frame.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
-      frame.src = pdfUrl;
-      frame.onload = () => {
+      printWindow.onload = () => {
         window.setTimeout(() => {
           try {
-            frame.contentWindow?.focus();
-            frame.contentWindow?.print();
+            printWindow.focus();
+            printWindow.print();
           } finally {
             setBusyAction(null);
           }
-        }, 250);
+        }, 600);
       };
-      document.body.appendChild(frame);
+      printWindow.location.replace(pdfUrl);
       window.setTimeout(() => {
-        frame.remove();
         URL.revokeObjectURL(pdfUrl);
         setBusyAction(null);
-      }, 60_000);
+      }, 120_000);
     } catch (cause) {
+      printWindow.close();
       setBusyAction(null);
       setError(cause instanceof Error ? cause.message : (en ? "Printing failed." : "L’impression a échoué."));
     }

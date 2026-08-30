@@ -67,6 +67,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     previewMediaId = crypto.randomUUID();
     await db.insert(media).values({ id: previewMediaId, type: "IMAGE", filename: stored.filename, originalName: cover.name, mimeType: stored.mimeType, size: stored.size, width: meta.width, height: meta.height, path: stored.path, alt: `Couverture de ${parsed.data.title || current.title}` });
   }
+  let effectiveGalleryPages=[...galleryPages];
+  const replacedDrawings:(typeof media.$inferSelect)[]=[];
+  if(multipartForm){
+    for(const page of galleryPages){
+      if(removedPages.some(removed=>removed.id===page.id))continue;
+      const selected=multipartForm.get(`drawing-${page.id}`);
+      if(!(selected instanceof File&&selected.size))continue;
+      await storageService.validateFile(selected,"IMAGE");
+      const previousDrawing=await db.query.media.findFirst({where:eq(media.id,page.mediaId)});
+      const meta=await sharp(Buffer.from(await selected.arrayBuffer())).metadata(),stored=await storageService.uploadFile(selected,"IMAGE"),drawingMediaId=crypto.randomUUID();
+      await db.insert(media).values({id:drawingMediaId,type:"IMAGE",filename:stored.filename,originalName:selected.name,mimeType:stored.mimeType,size:stored.size,width:meta.width,height:meta.height,path:stored.path,alt:`Dessin ${page.sortOrder+1} de ${parsed.data.title||current.title}`,language:current.language});
+      await db.update(activityGallery).set({mediaId:drawingMediaId}).where(eq(activityGallery.id,page.id));
+      effectiveGalleryPages=effectiveGalleryPages.map(item=>item.id===page.id?{...item,mediaId:drawingMediaId}:item);
+      if(previewMediaId===page.mediaId)previewMediaId=drawingMediaId;
+      if(previousDrawing)replacedDrawings.push(previousDrawing);
+    }
+  }
   await db.update(activities).set({ ...parsed.data, previewMediaId, ...(parsed.data.published !== undefined ? { publishedAt: parsed.data.published ? (current.publishedAt || new Date()) : null } : {}), updatedAt: new Date() }).where(eq(activities.id, id));
   if (categoryIds) await replaceActivityCategories(id, categoryIds);
   if(multipartForm){
@@ -81,18 +98,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if(previousModel&&previousModel.id!==modelMediaId){await db.delete(media).where(eq(media.id,previousModel.id));await storageService.deleteFile(previousModel.path).catch(()=>undefined)}
     }
   }
-  if(removedPages.length){
-    const removedIds=new Set(removedPages.map(page=>page.id)),remaining=galleryPages.filter(page=>!removedIds.has(page.id));
+  if(removedPages.length||replacedDrawings.length){
+    const removedIds=new Set(removedPages.map(page=>page.id)),remaining=effectiveGalleryPages.filter(page=>!removedIds.has(page.id));
     const pageMedia=await db.select().from(media).where(inArray(media.id,remaining.map(page=>page.mediaId))),mediaById=new Map(pageMedia.map(item=>[item.id,item]));
     const root=path.resolve(/*turbopackIgnore: true*/ process.env.MEDIA_ROOT??"./data/media");
     const files:File[]=[];for(const page of remaining){const item=mediaById.get(page.mediaId);if(!item)continue;const buffer=await readFile(safeMediaPath(root,item.path));files.push(new File([new Uint8Array(buffer)],item.originalName,{type:item.mimeType}))}
     if(files.length!==remaining.length)return Response.json({message:"Une page de l’activité est introuvable."},{status:400});
     const pdfBuffer=await imagesToPdf(files),filename=`activite-${id.slice(0,8)}.pdf`,pdfFile=new File([new Uint8Array(pdfBuffer)],filename,{type:"application/pdf"}),storedPdf=await storageService.uploadFile(pdfFile,"PDF"),newPdfId=crypto.randomUUID();
     await db.insert(media).values({id:newPdfId,type:"PDF",filename:storedPdf.filename,originalName:filename,mimeType:"application/pdf",size:storedPdf.size,path:storedPdf.path,alt:parsed.data.title||current.title});
-    const removedMediaIds=[...new Set(removedPages.flatMap(page=>[page.mediaId,page.modelMediaId]).filter((value):value is string=>Boolean(value)))];
+    const removedMediaIds=[...new Set([...removedPages.flatMap(page=>[page.mediaId,page.modelMediaId]),...replacedDrawings.map(item=>item.id)].filter((value):value is string=>Boolean(value)))];
     const removedMedia=removedMediaIds.length?await db.select().from(media).where(inArray(media.id,removedMediaIds)):[],previousPdf=current.pdfMediaId?await db.query.media.findFirst({where:eq(media.id,current.pdfMediaId)}):undefined;
-    await db.delete(activityGallery).where(inArray(activityGallery.id,removedPages.map(page=>page.id)));
-    await Promise.all(remaining.map((page,sortOrder)=>db.update(activityGallery).set({sortOrder}).where(eq(activityGallery.id,page.id))));
+    if(removedPages.length){
+      await db.delete(activityGallery).where(inArray(activityGallery.id,removedPages.map(page=>page.id)));
+      await Promise.all(remaining.map((page,sortOrder)=>db.update(activityGallery).set({sortOrder}).where(eq(activityGallery.id,page.id))));
+    }
     const nextPreview=removedPages.some(page=>page.mediaId===previewMediaId)?null:previewMediaId;
     await db.update(activities).set({pdfMediaId:newPdfId,pageCount:remaining.length,previewMediaId:nextPreview,updatedAt:new Date()}).where(eq(activities.id,id));
     if(previousPdf){await db.delete(media).where(eq(media.id,previousPdf.id));await storageService.deleteFile(previousPdf.path).catch(()=>undefined)}

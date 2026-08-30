@@ -84,20 +84,32 @@ export function RasterColoringStudio({ title, imagePath, modelPath=null, en, clo
     const target = canvas.current;
     if (loading || !frame || !target || !target.width || !target.height) return;
 
-    const resize = () => {
+    let animationFrame = 0;
+    let lastWidth = 0;
+    let lastHeight = 0;
+    const measure = () => {
       const bounds = frame.getBoundingClientRect();
       const availableWidth = Math.max(1, bounds.width - 16);
       const availableHeight = Math.max(1, bounds.height - 16);
       const ratio = target.width / target.height;
       const width = Math.min(availableWidth, availableHeight * ratio);
-      setCanvasDisplay({ width, height: width / ratio });
-      setView(1, { x: 0, y: 0 });
+      const height = width / ratio;
+      if (Math.abs(width - lastWidth) < .5 && Math.abs(height - lastHeight) < .5) return;
+      const firstMeasurement = lastWidth === 0;
+      lastWidth = width;
+      lastHeight = height;
+      setCanvasDisplay({ width, height });
+      if (firstMeasurement) setView(1, { x: 0, y: 0 });
+    };
+    const resize = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(measure);
     };
 
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(frame);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); cancelAnimationFrame(animationFrame); };
   }, [loading, setView]);
 
   function paintAt(clientX: number, clientY: number, vibrate = false) {

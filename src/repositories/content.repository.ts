@@ -62,7 +62,17 @@ export const contentRepository = {
     for (const row of galleryRows) { const gallery = galleryByActivity.get(row.activityId) ?? []; gallery.push({path:row.path,alt:row.alt,modelPath:row.modelPath}); galleryByActivity.set(row.activityId,gallery); }
     const categoriesByActivity = new Map<string, Array<{name:string;color:string;badge:string}>>();
     for (const row of categoryRows) { const list = categoriesByActivity.get(row.activityId) ?? []; list.push({name:row.name,color:row.color,badge:row.badge}); categoriesByActivity.set(row.activityId,list); }
-    return pageResult(pagination, items.map(item => ({...item,gallery:galleryByActivity.get(item.id)??[],categories:categoriesByActivity.get(item.id)??[]})), Number(count));
+    return pageResult(pagination, items.map(item => {
+      const gallery = galleryByActivity.get(item.id) ?? [];
+      const fallbackPreview = gallery[0];
+      return {
+        ...item,
+        previewPath: item.previewPath ?? fallbackPreview?.path ?? null,
+        previewAlt: item.previewAlt ?? fallbackPreview?.alt ?? null,
+        gallery,
+        categories: categoriesByActivity.get(item.id) ?? [],
+      };
+    }), Number(count));
   },
 
   async posts(options: ListingOptions = {}) {

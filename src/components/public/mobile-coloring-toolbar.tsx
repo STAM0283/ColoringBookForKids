@@ -21,7 +21,7 @@ type Props = {
 
 export function MobileColoringToolbar(props: Props) {
   return <aside className="mobile-coloring-toolbar lg:hidden" aria-label={props.en ? "Colouring tools" : "Outils de coloriage"}>
-    <div className="grid grid-cols-12 gap-1" aria-label={props.en ? "Colours" : "Couleurs"}>
+    <div className="grid grid-cols-8 gap-1 sm:grid-cols-12" aria-label={props.en ? "Colours" : "Couleurs"}>
       {props.colors.map(value => <button
         key={value}
         type="button"

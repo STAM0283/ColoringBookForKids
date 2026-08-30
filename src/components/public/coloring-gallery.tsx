@@ -8,6 +8,7 @@ import { MobileColoringToolbar } from "./mobile-coloring-toolbar";
 import { RasterColoringStudio } from "./raster-coloring-studio";
 import { ColoringResetDialog } from "./coloring-reset-dialog";
 import { articleContentToHtml, richTextToPlainText } from "@/lib/rich-text";
+import { COLORING_COLORS, coloringCheckClass } from "@/lib/coloring-palette";
 export type ColoringGame = {
     id: string;
     title: string;
@@ -30,7 +31,7 @@ export type ColoringGame = {
         color: string;
     }>;
 };
-const colors = ["#EF4444", "#F97316", "#FACC15", "#22C55E", "#14B8A6", "#38BDF8", "#2563EB", "#8B5CF6", "#EC4899", "#92400E", "#111827", "#FFFFFF"];
+const colors = [...COLORING_COLORS];
 export function ColoringGallery({ items, locale = "fr" }: {
     items: ColoringGame[];
     locale?: "fr" | "en";
@@ -94,7 +95,7 @@ function SvgStudio({ game, en, close }: {
 }) {
     useViewportLock();
     const root = useRef<HTMLDivElement>(null);
-    const [color, setColor] = useState(colors[0]);
+    const [color, setColor] = useState<string>(colors[0]);
     const [eraser, setEraser] = useState(false);
     const [undo, setUndo] = useState<Action[]>([]);
     const [redo, setRedo] = useState<Action[]>([]);
@@ -144,7 +145,7 @@ function StudioShell(props: StudioProps) {
     <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-3 backdrop-blur dark:border-white/10 lg:h-auto lg:px-4 lg:py-3"><h1 className="min-w-0 truncate font-display text-base font-black lg:text-xl">{props.title}</h1><button onClick={props.close} aria-label={props.en ? "Close" : "Fermer"} className="grid size-10 shrink-0 place-items-center rounded-xl border dark:border-white/10 lg:size-11"><X /></button></header>
     <main className="mx-auto grid min-h-0 w-full max-w-7xl flex-1 p-2 pb-[6.75rem] lg:grid-cols-[250px_1fr] lg:gap-5 lg:p-4">
       <aside className="hidden space-y-4 lg:block">
-        <section className="rounded-[1.5rem] border bg-card p-4 dark:border-white/10"><p className="text-sm font-black">{props.en ? "Choose a colour" : "Choisis une couleur"}</p><div className="mt-3 grid grid-cols-4 gap-2">{colors.map(value => <button key={value} onClick={() => { props.setColor(value); props.setEraser(false); }} className={`aspect-square rounded-xl border-2 ${!props.eraser && props.color === value ? "scale-110 border-slate-950 ring-4 ring-primary/30 dark:border-white" : "border-white/70 dark:border-white/15"}`} style={{ backgroundColor: value }}>{!props.eraser && props.color === value && <CheckCircle2 className={`mx-auto ${value === "#111827" ? "text-white" : "text-slate-900"}`} size={16}/>}</button>)}</div><button onClick={() => props.setEraser(true)} className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-black ${props.eraser ? "bg-primary/15 text-primary" : "dark:border-white/10"}`}><Eraser size={17}/>{props.en ? "Eraser" : "Gomme"}</button></section>
+        <section className="rounded-[1.5rem] border bg-card p-4 dark:border-white/10"><p className="text-sm font-black">{props.en ? "Choose a colour" : "Choisis une couleur"}</p><div className="mt-3 grid grid-cols-5 gap-2">{colors.map(value => <button key={value} onClick={() => { props.setColor(value); props.setEraser(false); }} className={`aspect-square rounded-xl border-2 ${!props.eraser && props.color === value ? "scale-110 border-slate-950 ring-4 ring-primary/30 dark:border-white" : "border-white/70 dark:border-white/15"}`} style={{ backgroundColor: value }}>{!props.eraser && props.color === value && <CheckCircle2 className={`mx-auto ${coloringCheckClass(value)}`} size={16}/>}</button>)}</div><button onClick={() => props.setEraser(true)} className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-black ${props.eraser ? "bg-primary/15 text-primary" : "dark:border-white/10"}`}><Eraser size={17}/>{props.en ? "Eraser" : "Gomme"}</button></section>
         <section className="grid grid-cols-2 gap-2 rounded-[1.5rem] border bg-card p-3 dark:border-white/10"><button disabled={!props.undo} onClick={props.undoOne} className={action}><Undo2 size={17}/>{props.en ? "Undo" : "Annuler"}</button><button disabled={!props.redo} onClick={props.redoOne} className={action}><Redo2 size={17}/>{props.en ? "Redo" : "Rétablir"}</button><button onClick={props.reset} className={`${action} col-span-2`}><RotateCcw size={17}/>{props.en ? "Start again" : "Recommencer"}</button></section>
         <ExportColoringButtons title={props.title} en={props.en} getCanvas={props.getCanvas}/>
       </aside>

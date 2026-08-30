@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { and, eq, inArray } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -59,6 +60,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const usedAsPage = await db.query.activityGallery.findFirst({ where: eq(activityGallery.mediaId, previousPreview.id) });
     if (!usedAsPage) { await db.delete(media).where(eq(media.id, previousPreview.id)); await storageService.deleteFile(previousPreview.path).catch(() => undefined); }
   }
+  revalidateActivityPages();
   return Response.json({ message: "Activité modifiée avec succès." });
 }
 
@@ -73,5 +75,13 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   await db.delete(activities).where(eq(activities.id, id));
   if (mediaIds.length) await db.delete(media).where(inArray(media.id, mediaIds));
   await Promise.all(linkedMedia.map(item => storageService.deleteFile(item.path).catch(() => undefined)));
+  revalidateActivityPages();
   return Response.json({ message: "Activité supprimée avec succès." });
+}
+
+function revalidateActivityPages() {
+  revalidatePath("/");
+  revalidatePath("/activites");
+  revalidatePath("/en");
+  revalidatePath("/en/activities");
 }

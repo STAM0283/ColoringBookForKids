@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, CheckCircle2, FileImage, Languages, LoaderCircle, LockKeyhole, Trash2, UploadCloud, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActivityCategorySelector } from "./activity-category-selector";
@@ -11,6 +12,7 @@ type Selected = {
     preview: string;
 };
 export function ImageToPdf() {
+    const router = useRouter();
     const [items, setItems] = useState<Selected[]>([]), [language, setLanguage] = useState<"FR" | "EN">("FR"), [title, setTitle] = useState("Mon activité de coloriage"), [description, setDescription] = useState("Activité gratuite à imprimer pour les enfants."), [cover, setCover] = useState<File | null>(null), [coverPreview, setCoverPreview] = useState(""), [categoryIds, setCategoryIds] = useState<string[]>([]), [activityTypeId,setActivityTypeId]=useState(""),[typeOptions,setTypeOptions]=useState<Array<{id:string;language:"FR"|"EN";name:string;badge:string}>>([]), [accessLevel, setAccessLevel] = useState<"PUBLIC" | "CLUB">("PUBLIC"), [loading, setLoading] = useState(false), [success, setSuccess] = useState(""), [error, setError] = useState("");
     useEffect(()=>{fetch("/api/admin/activity-types",{cache:"no-store"}).then(response=>response.ok?response.json():{items:[]}).then((data:{items:Array<{id:string;language:"FR"|"EN";name:string;badge:string}>})=>setTypeOptions(data.items)).catch(()=>setTypeOptions([]))},[]);
     useEffect(()=>{if(activityTypeId&&!typeOptions.some(option=>option.id===activityTypeId&&option.language===language))setActivityTypeId("")},[activityTypeId,language,typeOptions]);
@@ -33,6 +35,8 @@ export function ImageToPdf() {
         setCover(null);
         setCoverPreview("");
         window.dispatchEvent(new Event("admin-content-updated"));
+        router.replace("/admin/activites");
+        router.refresh();
     }
     else
         setError(data?.message || "Conversion impossible."); }

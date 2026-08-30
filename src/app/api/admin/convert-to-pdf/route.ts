@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { activities, activityGallery, activityTypes, media } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { imagesToPdf } from "@/lib/images-to-pdf";
 import { storageService } from "@/lib/storage/local-storage";
 import { slugify } from "@/lib/utils";
@@ -47,6 +48,10 @@ export async function POST(request: Request) {
     await db.insert(activities).values({ id: activityId, language, title, slug: `${slugify(title) || "activite"}-${activityId.slice(0, 6)}`, description, activityTypeId, previewMediaId, pdfMediaId: mediaId, pageCount: images.length, accessLevel, published: true, publishedAt: new Date() });
     await db.insert(activityGallery).values(pages.map((page, sortOrder) => ({ id: crypto.randomUUID(), activityId, mediaId: page.id, sortOrder })));
     await replaceActivityCategories(activityId, idList(form.get("categoryIds")));
+    revalidatePath("/");
+    revalidatePath("/activites");
+    revalidatePath("/en");
+    revalidatePath("/en/activities");
     return Response.json({ message: accessLevel === "CLUB" ? "PDF créé et réservé au Club Instagram." : "PDF créé et publié dans les activités gratuites.", id: activityId, filename }, { status: 201 });
   } catch (error) { return Response.json({ message: error instanceof Error ? error.message : "Conversion impossible." }, { status: 400 }); }
 }

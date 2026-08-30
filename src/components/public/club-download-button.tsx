@@ -60,6 +60,14 @@ export function ClubDownloadButton({ activityId, title, coloringPages, coloringE
     return () => window.removeEventListener("activity-page-change", pageChange);
   }, [activityId, coloringPages]);
 
+  useEffect(() => {
+    setCurrentImagePath(currentPath => {
+      const nextPage = coloringPages.find(page => page.path === currentPath) ?? coloringPages[0];
+      setCurrentModelPath(nextPage?.modelPath ?? null);
+      return nextPage?.path ?? "";
+    });
+  }, [coloringPages]);
+
   function triggerDownload() {
     setError("");
     setBusyAction("download");

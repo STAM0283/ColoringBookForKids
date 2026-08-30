@@ -31,4 +31,16 @@ describe("raster coloring engine", () => {
     const map = buildColoringRegionMap(lineDrawing(40, 40), 40, 40);
     expect(isColorableRegion(map, findColoringRegion(map, 2, 2, 1))).toBe(true);
   });
+
+  it("closes a small anti-aliased gap in a grey outline", () => {
+    const width = 40, height = 40;
+    const pixels = new Uint8ClampedArray(width * height * 4).fill(255);
+    for (let y = 0; y < height; y++) {
+      if (y >= 19 && y <= 21) continue;
+      const offset = (y * width + 20) * 4;
+      pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = 195;
+    }
+    const map = buildColoringRegionMap(pixels, width, height);
+    expect(findColoringRegion(map, 6, 20, 1)).not.toBe(findColoringRegion(map, 34, 20, 1));
+  });
 });

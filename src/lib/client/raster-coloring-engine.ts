@@ -14,7 +14,8 @@ export type ColoringRegionMap = {
   regions: Array<ColoringRegion | undefined>;
 };
 
-const LINE_LUMINANCE = 185;
+const LINE_LUMINANCE = 215;
+const LINE_DILATION_RADIUS = 2;
 const MIN_REGION_SIZE = 4;
 
 export function buildColoringRegionMap(
@@ -31,17 +32,17 @@ export function buildColoringRegionMap(
     if (pixels[offset + 3] > 16 && luminance < LINE_LUMINANCE) lines[position] = 1;
   }
 
-  // A one-pixel virtual dilation closes tiny JPEG/anti-aliasing gaps without
-  // changing the image displayed to the child.
+  // A small virtual dilation closes JPEG/anti-aliasing gaps and joins thin
+  // grey outlines without changing the image displayed to the child.
   const blocked = lines.slice();
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const position = y * width + x;
       if (!lines[position]) continue;
-      for (let dy = -1; dy <= 1; dy++) {
+      for (let dy = -LINE_DILATION_RADIUS; dy <= LINE_DILATION_RADIUS; dy++) {
         const nextY = y + dy;
         if (nextY < 0 || nextY >= height) continue;
-        for (let dx = -1; dx <= 1; dx++) {
+        for (let dx = -LINE_DILATION_RADIUS; dx <= LINE_DILATION_RADIUS; dx++) {
           const nextX = x + dx;
           if (nextX >= 0 && nextX < width) blocked[nextY * width + nextX] = 1;
         }

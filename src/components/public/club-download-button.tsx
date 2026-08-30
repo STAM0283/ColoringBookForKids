@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Download, Instagram, LoaderCircle, LockKeyhole, X } from "lucide-react";
+import { CheckCircle2, Download, Instagram, LoaderCircle, LockKeyhole, Printer, X } from "lucide-react";
 import { INSTAGRAM_URL } from "@/lib/site-config";
 import type { Locale } from "@/lib/i18n";
 
@@ -16,8 +16,11 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
   const [success, setSuccess] = useState(false);
   const [locallyUnlocked, setLocallyUnlocked] = useState(false);
   const [includeModel,setIncludeModel]=useState(false);
+  const [requestedAction,setRequestedAction]=useState<"download"|"print">("download");
   const router = useRouter();
-  const downloadUrl = `/api/activities/${activityId}/download${includeModel?"?model=1":""}`;
+  const query=includeModel?"?model=1":"";
+  const downloadUrl = `/api/activities/${activityId}/download${query}`;
+  const printUrl=`/api/activities/${activityId}/download?${includeModel?"model=1&":""}print=1`;
   const instagramUrl = INSTAGRAM_URL;
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
 
   const modelOption=<label className={`mt-4 flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[.025] px-3 py-2.5 text-sm font-semibold dark:bg-white/[.035] ${hasModel?"cursor-pointer text-foreground/75":"cursor-not-allowed text-foreground/40"}`}><input type="checkbox" disabled={!hasModel} checked={includeModel} onChange={event=>{const checked=event.target.checked;setIncludeModel(checked);window.dispatchEvent(new CustomEvent("activity-model-option",{detail:{activityId,includeModel:checked}}))}} className="size-4 accent-emerald-600 disabled:opacity-40"/><span>{hasModel?(en?"PDF with color models":"PDF avec modèles en couleur"):(en?"No color model available":"Aucun modèle couleur disponible")}</span></label>;
   if (!enabled) return <span className="mt-4 inline-flex items-center gap-2 font-bold text-slate-400 dark:text-slate-300"><LockKeyhole size={17}/> {en ? "Download unavailable" : "Téléchargement indisponible"}</span>;
-  if (!clubOnly || unlocked || locallyUnlocked) return <div>{modelOption}<a href={downloadUrl} className="mt-3 inline-flex items-center gap-2 font-bold text-primary"><Download size={17}/> {en ? "Download" : "Télécharger"}</a></div>;
+  if (!clubOnly || unlocked || locallyUnlocked) return <div>{modelOption}<div className="mt-3 flex flex-wrap gap-4"><a href={downloadUrl} className="inline-flex items-center gap-2 font-bold text-primary"><Download size={17}/> {en ? "Download" : "Télécharger"}</a><a href={printUrl} target="_blank" rel="noopener" className="inline-flex items-center gap-2 font-bold text-primary"><Printer size={17}/> {en ? "Print" : "Imprimer"}</a></div></div>;
 
   async function activate(event: React.FormEvent) {
     event.preventDefault();
@@ -56,7 +59,8 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       setOpen(false);
       router.refresh();
       const link = document.createElement("a");
-      link.href = downloadUrl;
+      link.href = requestedAction==="print"?printUrl:downloadUrl;
+      if(requestedAction==="print")link.target="_blank";
       link.download = "";
       document.body.appendChild(link);
       link.click();
@@ -85,5 +89,5 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       </div>
     </div>, document.body) : null;
 
-  return <><div>{modelOption}<button onClick={() => setOpen(true)} className="mt-3 inline-flex items-center gap-2 font-bold text-primary"><LockKeyhole size={17}/> {en ? "Unlock for free" : "Débloquer gratuitement"}</button></div>{dialog}</>;
+  return <><div>{modelOption}<div className="mt-3 flex flex-wrap gap-4"><button onClick={() => {setRequestedAction("download");setOpen(true)}} className="inline-flex items-center gap-2 font-bold text-primary"><LockKeyhole size={17}/> {en ? "Unlock & download" : "Débloquer et télécharger"}</button><button onClick={() => {setRequestedAction("print");setOpen(true)}} className="inline-flex items-center gap-2 font-bold text-primary"><Printer size={17}/> {en ? "Unlock & print" : "Débloquer et imprimer"}</button></div></div>{dialog}</>;
 }

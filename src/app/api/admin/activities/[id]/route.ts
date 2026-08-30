@@ -1,4 +1,6 @@
 import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -6,6 +8,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { activities, activityGallery, activityTypes, media } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
+import { imagesToPdf } from "@/lib/images-to-pdf";
 import { idList, replaceActivityCategories } from "@/lib/activity-relations";
 
 const schema = z.object({
@@ -31,6 +34,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   let categoryIds: string[] | null = null;
   let multipartForm:FormData|null=null;
   let removedModelIds:string[]=[];
+  let removeCover=false;
   if (multipart) {
     const form = await request.formData();
     multipartForm=form;
@@ -38,6 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     cover = selected instanceof File && selected.size ? selected : null;
     categoryIds = idList(form.get("categoryIds"));
     removedModelIds=idList(form.get("removedModelIds"));
+    removeCover=form.get("removeCover")==="true";
     values = { title: form.get("title"), description: form.get("description"), activityTypeId:String(form.get("activityTypeId")||"")||null, accessLevel: form.get("accessLevel"), published: form.get("published") === "true", downloadEnabled: form.get("downloadEnabled") === "true" };
   } else values = await request.json().catch(() => null);
   const parsed = schema.safeParse(values);
@@ -47,9 +52,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const [validType] = await db.select({ id: activityTypes.id }).from(activityTypes).where(and(eq(activityTypes.id, parsed.data.activityTypeId), eq(activityTypes.language, expectedLanguage))).limit(1);
     if (!validType) return Response.json({ message: "Le type d’activité ne correspond pas à la langue de l’activité." }, { status: 400 });
   }
+  const galleryPages=multipartForm?await db.select().from(activityGallery).where(eq(activityGallery.activityId,id)):[];
+  const removedPages=galleryPages.filter(page=>multipartForm?.get(`remove-page-${page.id}`)==="true");
+  if(removedPages.length&&removedPages.length===galleryPages.length)return Response.json({message:"Une activité doit conserver au moins un dessin."},{status:400});
 
   let previewMediaId = current.previewMediaId;
   let previousPreview: typeof media.$inferSelect | undefined;
+  if(removeCover&&!cover&&current.previewMediaId){previousPreview=await db.query.media.findFirst({where:eq(media.id,current.previewMediaId)});previewMediaId=null}
   if (cover) {
     previousPreview = current.previewMediaId ? await db.query.media.findFirst({ where: eq(media.id, current.previewMediaId) }) : undefined;
     await storageService.validateFile(cover, "IMAGE");
@@ -61,8 +70,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   await db.update(activities).set({ ...parsed.data, previewMediaId, ...(parsed.data.published !== undefined ? { publishedAt: parsed.data.published ? (current.publishedAt || new Date()) : null } : {}), updatedAt: new Date() }).where(eq(activities.id, id));
   if (categoryIds) await replaceActivityCategories(id, categoryIds);
   if(multipartForm){
-    const pages=await db.select().from(activityGallery).where(eq(activityGallery.activityId,id));
-    for(const page of pages){
+    for(const page of galleryPages){
+      if(removedPages.some(removed=>removed.id===page.id))continue;
       const selected=multipartForm.get(`model-${page.id}`),removeModel=removedModelIds.includes(page.id)||multipartForm.get(`remove-model-${page.id}`)==="true";
       if(!(selected instanceof File&&selected.size)&&!removeModel)continue;
       const previousModel=page.modelMediaId?await db.query.media.findFirst({where:eq(media.id,page.modelMediaId)}):undefined;
@@ -71,6 +80,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       await db.update(activityGallery).set({modelMediaId}).where(eq(activityGallery.id,page.id));
       if(previousModel&&previousModel.id!==modelMediaId){await db.delete(media).where(eq(media.id,previousModel.id));await storageService.deleteFile(previousModel.path).catch(()=>undefined)}
     }
+  }
+  if(removedPages.length){
+    const removedIds=new Set(removedPages.map(page=>page.id)),remaining=galleryPages.filter(page=>!removedIds.has(page.id));
+    const pageMedia=await db.select().from(media).where(inArray(media.id,remaining.map(page=>page.mediaId))),mediaById=new Map(pageMedia.map(item=>[item.id,item]));
+    const root=path.resolve(/*turbopackIgnore: true*/ process.env.MEDIA_ROOT??"./data/media");
+    const files:File[]=[];for(const page of remaining){const item=mediaById.get(page.mediaId);if(!item)continue;const buffer=await readFile(safeMediaPath(root,item.path));files.push(new File([new Uint8Array(buffer)],item.originalName,{type:item.mimeType}))}
+    if(files.length!==remaining.length)return Response.json({message:"Une page de l’activité est introuvable."},{status:400});
+    const pdfBuffer=await imagesToPdf(files),filename=`activite-${id.slice(0,8)}.pdf`,pdfFile=new File([new Uint8Array(pdfBuffer)],filename,{type:"application/pdf"}),storedPdf=await storageService.uploadFile(pdfFile,"PDF"),newPdfId=crypto.randomUUID();
+    await db.insert(media).values({id:newPdfId,type:"PDF",filename:storedPdf.filename,originalName:filename,mimeType:"application/pdf",size:storedPdf.size,path:storedPdf.path,alt:parsed.data.title||current.title});
+    const removedMediaIds=[...new Set(removedPages.flatMap(page=>[page.mediaId,page.modelMediaId]).filter((value):value is string=>Boolean(value)))];
+    const removedMedia=removedMediaIds.length?await db.select().from(media).where(inArray(media.id,removedMediaIds)):[],previousPdf=current.pdfMediaId?await db.query.media.findFirst({where:eq(media.id,current.pdfMediaId)}):undefined;
+    await db.delete(activityGallery).where(inArray(activityGallery.id,removedPages.map(page=>page.id)));
+    await Promise.all(remaining.map((page,sortOrder)=>db.update(activityGallery).set({sortOrder}).where(eq(activityGallery.id,page.id))));
+    const nextPreview=removedPages.some(page=>page.mediaId===previewMediaId)?null:previewMediaId;
+    await db.update(activities).set({pdfMediaId:newPdfId,pageCount:remaining.length,previewMediaId:nextPreview,updatedAt:new Date()}).where(eq(activities.id,id));
+    if(previousPdf){await db.delete(media).where(eq(media.id,previousPdf.id));await storageService.deleteFile(previousPdf.path).catch(()=>undefined)}
+    if(removedMediaIds.length){await db.delete(media).where(inArray(media.id,removedMediaIds));await Promise.all(removedMedia.map(item=>storageService.deleteFile(item.path).catch(()=>undefined)))}
   }
   if (previousPreview) {
     const usedAsPage = await db.query.activityGallery.findFirst({ where: eq(activityGallery.mediaId, previousPreview.id) });
@@ -101,3 +127,4 @@ function revalidateActivityPages() {
   revalidatePath("/en");
   revalidatePath("/en/activities");
 }
+function safeMediaPath(root:string,relative:string){const target=path.resolve(root,relative);if(!target.startsWith(root+path.sep))throw new Error("Chemin de média invalide");return target}

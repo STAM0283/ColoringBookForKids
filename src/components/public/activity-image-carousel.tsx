@@ -26,8 +26,8 @@ export function ActivityImageCarousel({ activityId, images, title, locale = "fr"
   }, [expanded, multiple, images.length]);
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("activity-page-change", { detail: { activityId, index, modelPath: current?.modelPath ?? null } }));
-  }, [activityId, current?.modelPath, index]);
+    window.dispatchEvent(new CustomEvent("activity-page-change", { detail: { activityId, index, path: current?.path ?? "", modelPath: current?.modelPath ?? null } }));
+  }, [activityId, current?.modelPath, current?.path, index]);
 
   if (!current) return null;
   const picture = (fullscreen = false) => <Image key={current.path} src={`/media/${current.path}`} alt={current.alt || `Page ${index + 1} — ${title}`} fill sizes={fullscreen ? "100vw" : "(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"} quality={fullscreen ? 92 : 82} className="object-contain"/>;

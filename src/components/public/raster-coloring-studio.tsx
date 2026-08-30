@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, LoaderCircle, Maximize2, Minus, Plus, Redo2, RotateCcw, Undo2, X } from "lucide-react";
 import { useViewportLock } from "@/hooks/use-viewport-lock";
@@ -13,7 +14,7 @@ type PaintAction = { region: number; before: string | null; after: string | null
 type Point = { x: number; y: number };
 type Pinch = { distance: number; midpoint: Point; zoom: number; pan: Point };
 
-export function RasterColoringStudio({ title, imagePath, en, close }: { title:string; imagePath:string; en:boolean; close:()=>void }) {
+export function RasterColoringStudio({ title, imagePath, modelPath=null, en, close }: { title:string; imagePath:string; modelPath?:string|null; en:boolean; close:()=>void }) {
   useViewportLock();
   const canvas = useRef<HTMLCanvasElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
@@ -54,7 +55,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
   useEffect(() => {
     setCanvasDisplay(null);
     setLoading(true);
-    const image = new Image();
+    const image = new window.Image();
     image.onload = () => {
       const target = canvas.current;
       if (!target) return;
@@ -261,6 +262,7 @@ export function RasterColoringStudio({ title, imagePath, en, close }: { title:st
     <main className="mx-auto grid min-h-0 w-full max-w-7xl flex-1 p-2 pb-[6.75rem] lg:grid-cols-[250px_1fr] lg:gap-5 lg:p-4">
       <aside className="hidden space-y-4 lg:block"><section className="rounded-[1.5rem] border bg-card p-4 dark:border-white/10"><p className="text-sm font-black">{en ? "Choose a colour" : "Choisis une couleur"}</p><div className="mt-3 grid grid-cols-4 gap-2">{colors.map(value => <button key={value} onClick={() => { setColor(value); setEraser(false); }} aria-label={value} className={`aspect-square rounded-xl border-2 transition hover:scale-110 ${!eraser && color === value ? "scale-110 border-slate-950 ring-4 ring-primary/30 dark:border-white" : "border-white/70 dark:border-white/15"}`} style={{ backgroundColor:value }}/>)}</div><button onClick={() => setEraser(true)} className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-black ${eraser ? "bg-primary/15 text-primary" : "dark:border-white/10"}`}><Eraser size={17}/>{en ? "White eraser" : "Gomme blanche"}</button></section><section className="grid grid-cols-2 gap-2 rounded-[1.5rem] border bg-card p-3 dark:border-white/10"><button disabled={!undo.length} onClick={undoOne} className={action}><Undo2 size={17}/>{en ? "Undo" : "Annuler"}</button><button disabled={!redo.length} onClick={redoOne} className={action}><Redo2 size={17}/>{en ? "Redo" : "Rétablir"}</button><button onClick={reset} className={`${action} col-span-2`}><RotateCcw size={17}/>{en ? "Start again" : "Recommencer"}</button></section><ExportColoringButtons title={title} en={en} getCanvas={() => canvas.current}/></aside>
       <section className="relative min-h-0 min-w-0 overflow-hidden">{message && <p className="absolute inset-x-2 top-2 z-30 rounded-xl bg-amber-100/95 p-2 text-center text-xs font-bold text-amber-900 shadow dark:bg-amber-950/95 dark:text-amber-200 lg:relative lg:inset-auto lg:mb-3 lg:p-3 lg:text-sm">{message}</p>}<div ref={viewport} className="relative size-full min-h-0 min-w-0 overflow-hidden rounded-xl border bg-white p-1 shadow-lg dark:border-white/10 lg:min-h-[60vh] lg:rounded-[2rem] lg:p-2 lg:shadow-xl">
+{modelPath && <aside className="absolute right-2 top-2 z-30 w-20 overflow-hidden rounded-xl border-2 border-white bg-white p-1 shadow-xl dark:border-emerald-300/30 dark:bg-slate-900 sm:w-24 lg:right-4 lg:top-4 lg:w-32"><div className="relative aspect-square overflow-hidden rounded-lg"><Image src={`/media/${modelPath}`} alt={en?"Colour model":"Modèle en couleur"} fill sizes="128px" className="object-contain"/></div><p className="hidden px-1 pb-1 pt-1.5 text-center text-[10px] font-black text-emerald-700 dark:text-emerald-300 lg:block">{en?"COLOUR MODEL":"MODÈLE COULEUR"}</p></aside>}
 {(loading || !canvasDisplay) && <div className="absolute inset-0 z-20 grid place-items-center bg-[radial-gradient(circle_at_50%_42%,hsl(var(--primary)/.12),transparent_38%),linear-gradient(135deg,#f3efe7,#e9f4ef)] dark:bg-[radial-gradient(circle_at_50%_42%,hsl(var(--primary)/.18),transparent_38%),linear-gradient(135deg,#111923,#0d1218)]">
   <div className="text-center text-foreground/70">
     <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-card/85 shadow-lg ring-1 ring-border/70 backdrop-blur"><LoaderCircle className="animate-spin text-primary"/></span>

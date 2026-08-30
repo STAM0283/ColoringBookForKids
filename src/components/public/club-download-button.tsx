@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Download, Instagram, LoaderCircle, LockKeyhole, Printer, X } from "lucide-react";
+import { CheckCircle2, Download, Instagram, LoaderCircle, LockKeyhole, Palette, Printer, X } from "lucide-react";
 import { INSTAGRAM_URL } from "@/lib/site-config";
 import type { Locale } from "@/lib/i18n";
+import { RasterColoringStudio } from "./raster-coloring-studio";
 
-export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, hasModel=false, locale = "fr" }: { activityId: string; clubOnly: boolean; unlocked: boolean; enabled: boolean; hasModel?:boolean;locale?: Locale }) {
+export function ClubDownloadButton({ activityId, title, coloringPages, coloringEnabled=false, clubOnly, unlocked, enabled, hasModel=false, locale = "fr" }: { activityId: string; title:string; coloringPages:Array<{path:string;modelPath:string|null}>; coloringEnabled?:boolean; clubOnly: boolean; unlocked: boolean; enabled: boolean; hasModel?:boolean;locale?: Locale }) {
   const en = locale === "en";
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -18,6 +19,9 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
   const [includeModel,setIncludeModel]=useState(false);
   const [requestedAction,setRequestedAction]=useState<"download"|"print">("download");
   const [busyAction,setBusyAction]=useState<"download"|"print"|null>(null);
+  const [coloringOpen,setColoringOpen]=useState(false);
+  const [currentImagePath,setCurrentImagePath]=useState(coloringPages[0]?.path ?? "");
+  const [currentModelPath,setCurrentModelPath]=useState(coloringPages[0]?.modelPath ?? null);
   const router = useRouter();
   const query=includeModel?"?model=1":"";
   const downloadUrl = `/api/activities/${activityId}/download${query}`;
@@ -42,6 +46,19 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       .catch(() => undefined);
     return () => { active = false; };
   }, [clubOnly, unlocked]);
+
+  useEffect(() => {
+    const pageChange = (event: Event) => {
+      const detail = (event as CustomEvent<{activityId:string;path:string;modelPath:string|null}>).detail;
+      if (detail?.activityId !== activityId) return;
+      const drawing = coloringPages.find(page => page.path === detail.path);
+      if (!drawing) return;
+      setCurrentImagePath(drawing.path);
+      setCurrentModelPath(drawing.modelPath);
+    };
+    window.addEventListener("activity-page-change", pageChange);
+    return () => window.removeEventListener("activity-page-change", pageChange);
+  }, [activityId, coloringPages]);
 
   function triggerDownload() {
     setError("");
@@ -93,7 +110,11 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
 
   const modelOption=<label className={`mt-4 flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[.025] px-3 py-2.5 text-sm font-semibold dark:bg-white/[.035] ${hasModel?"cursor-pointer text-foreground/75":"cursor-not-allowed text-foreground/40"}`}><input type="checkbox" disabled={!hasModel} checked={includeModel} onChange={event=>{const checked=event.target.checked;setIncludeModel(checked);window.dispatchEvent(new CustomEvent("activity-model-option",{detail:{activityId,includeModel:checked}}))}} className="size-4 accent-emerald-600 disabled:opacity-40"/><span>{hasModel?(en?"PDF with color models":"PDF avec modèles en couleur"):(en?"No color model available":"Aucun modèle couleur disponible")}</span></label>;
 
-  const actionButtons = (locked: boolean) => <div className="mt-3 grid grid-cols-2 gap-2.5">
+  const actionButtons = (locked: boolean) => <div className={`mt-3 grid grid-cols-2 gap-2.5 ${coloringEnabled?"sm:grid-cols-3":""}`}>
+    {coloringEnabled && <button type="button" onClick={() => setColoringOpen(true)} className="group col-span-2 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 px-3 py-3 font-black text-white shadow-lg shadow-fuchsia-700/20 transition duration-200 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-xl active:translate-y-0 active:scale-[.97] dark:border dark:border-fuchsia-300/20 dark:from-violet-700 dark:via-fuchsia-700 dark:to-pink-700 dark:shadow-black/35 sm:col-span-1">
+      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-white/15"><Palette size={18}/></span>
+      <span className="text-sm sm:text-base">{en ? "Colour" : "Colorier"}</span>
+    </button>}
     <button type="button" disabled={busyAction !== null} onClick={() => locked ? (setRequestedAction("download"), setOpen(true)) : triggerDownload()} className="group flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-3 font-black text-white shadow-lg shadow-emerald-700/20 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-xl active:translate-y-0 active:scale-[.97] disabled:pointer-events-none disabled:opacity-60 dark:border dark:border-emerald-300/20 dark:bg-emerald-600 dark:text-white dark:shadow-emerald-950/40 dark:hover:border-emerald-200/30 dark:hover:bg-emerald-500">
       <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-white/10 dark:bg-slate-950/20 dark:ring-white/15">{busyAction === "download" ? <LoaderCircle className="animate-spin" size={18}/> : locked ? <LockKeyhole size={18}/> : <Download size={18}/>}</span>
       <span className="text-sm sm:text-base">{locked ? (en ? "Unlock & download" : "Débloquer") : (en ? "Download" : "Télécharger")}</span>
@@ -104,8 +125,10 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
     </button>
   </div>;
 
+  const coloringStudio = coloringEnabled && coloringOpen && currentImagePath ? <RasterColoringStudio title={title} imagePath={currentImagePath} modelPath={currentModelPath} en={en} close={() => setColoringOpen(false)}/> : null;
+
   if (!enabled) return <span className="mt-4 inline-flex items-center gap-2 font-bold text-slate-400 dark:text-slate-300"><LockKeyhole size={17}/> {en ? "Download unavailable" : "Téléchargement indisponible"}</span>;
-  if (!clubOnly || unlocked || locallyUnlocked) return <div>{modelOption}{actionButtons(false)}{error && <p role="alert" className="mt-2 text-sm font-bold text-red-600 dark:text-red-400">{error}</p>}</div>;
+  if (!clubOnly || unlocked || locallyUnlocked) return <><div>{modelOption}{actionButtons(false)}{error && <p role="alert" className="mt-2 text-sm font-bold text-red-600 dark:text-red-400">{error}</p>}</div>{coloringStudio}</>;
 
   async function activate(event: React.FormEvent) {
     event.preventDefault();
@@ -145,5 +168,5 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       </div>
     </div>, document.body) : null;
 
-  return <><div>{modelOption}{actionButtons(true)}</div>{dialog}</>;
+  return <><div>{modelOption}{actionButtons(true)}</div>{dialog}{coloringStudio}</>;
 }

@@ -5,13 +5,16 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { articleContentToHtml } from "@/lib/rich-text";
 
-export function ActivityDescriptionToggle({ activityId, title, description, modelPath = null, locale = "fr" }: { activityId: string; title: string; description: string; modelPath?: string | null; locale?: "fr" | "en" }) {
+export function ActivityDescriptionToggle({ activityId, title, description, modelPath = null, fallbackModelPath = null, locale = "fr" }: { activityId: string; title: string; description: string; modelPath?: string | null; fallbackModelPath?: string | null; locale?: "fr" | "en" }) {
   const [open, setOpen] = useState(false);
   const [currentModel, setCurrentModel] = useState(modelPath);
   const [showModel, setShowModel] = useState(false);
   const panelId = useId();
   const en = locale === "en";
   const content = description.trim();
+  const displayedModel = currentModel || fallbackModelPath;
+
+  useEffect(() => { setCurrentModel(modelPath); }, [modelPath]);
 
   useEffect(() => {
     const pageChange = (event: Event) => {
@@ -37,9 +40,9 @@ export function ActivityDescriptionToggle({ activityId, title, description, mode
         <ChevronDown size={19} className={`transition-transform duration-300 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}/>
       </button>}
     </div>
-    {showModel && currentModel && <div className="mt-3 flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-50/70 p-2.5 dark:border-emerald-300/20 dark:bg-emerald-400/[.07]">
-      <span className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm dark:border-white/10"><Image src={`/media/${currentModel}`} alt={en ? "Color model preview" : "Aperçu du modèle en couleur"} fill sizes="64px" className="object-contain"/></span>
-      <span><strong className="block text-sm text-emerald-800 dark:text-emerald-200">{en ? "Color model" : "Modèle en couleur"}</strong><small className="mt-0.5 block text-xs text-foreground/55">{en ? "Preview for the selected drawing" : "Aperçu associé au dessin sélectionné"}</small></span>
+    {showModel && displayedModel && <div className="mt-3 flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-50/70 p-2.5 dark:border-emerald-300/20 dark:bg-emerald-400/[.07]">
+      <span className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm dark:border-white/10"><Image key={displayedModel} src={`/media/${displayedModel}`} alt={en ? "Color model preview" : "Aperçu du modèle en couleur"} fill sizes="64px" className="object-contain"/></span>
+      <span><strong className="block text-sm text-emerald-800 dark:text-emerald-200">{en ? "Color model" : "Modèle en couleur"}</strong><small className="mt-0.5 block text-xs text-foreground/55">{currentModel?(en ? "Preview for the selected drawing" : "Aperçu associé au dessin sélectionné"):(en ? "Model available in this PDF" : "Modèle disponible dans ce PDF")}</small></span>
     </div>}
     {content && <div id={panelId} aria-hidden={!open} className={`grid transition-[grid-template-rows,opacity,margin] duration-300 ease-out motion-reduce:transition-none ${open ? "mt-3 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"}`}>
       <div className="min-h-0 overflow-hidden">

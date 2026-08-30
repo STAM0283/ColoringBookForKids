@@ -69,17 +69,17 @@ export function ClubDownloadButton({ activityId, clubOnly, unlocked, enabled, ha
       const response = await fetch(printUrl, { cache: "no-store", credentials: "same-origin" });
       if (!response.ok) throw new Error(en ? "Unable to prepare the document." : "Impossible de préparer le document.");
       const pdfUrl = URL.createObjectURL(await response.blob());
-      printWindow.onload = () => {
-        window.setTimeout(() => {
-          try {
-            printWindow.focus();
-            printWindow.print();
-          } finally {
-            setBusyAction(null);
-          }
-        }, 600);
+      let printRequested = false;
+      const requestPrint = () => {
+        if (printRequested || printWindow.closed) return;
+        printRequested = true;
+        setBusyAction(null);
+        printWindow.focus();
+        printWindow.print();
       };
+      printWindow.onload = () => window.setTimeout(requestPrint, 500);
       printWindow.location.replace(pdfUrl);
+      window.setTimeout(requestPrint, 1800);
       window.setTimeout(() => {
         URL.revokeObjectURL(pdfUrl);
         setBusyAction(null);

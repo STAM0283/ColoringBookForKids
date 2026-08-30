@@ -125,7 +125,7 @@ export function ClubDownloadButton({ activityId, title, coloringPages, coloringE
     </button>
   </div>;
 
-  const coloringStudio = coloringEnabled && coloringOpen && currentImagePath ? <RasterColoringStudio title={title} imagePath={currentImagePath} modelPath={currentModelPath} en={en} close={() => setColoringOpen(false)}/> : null;
+  const coloringStudio = coloringEnabled && coloringOpen && currentImagePath && typeof document !== "undefined" ? createPortal(<RasterColoringStudio title={title} imagePath={currentImagePath} modelPath={currentModelPath} en={en} close={() => setColoringOpen(false)}/>, document.body) : null;
 
   if (!enabled) return <span className="mt-4 inline-flex items-center gap-2 font-bold text-slate-400 dark:text-slate-300"><LockKeyhole size={17}/> {en ? "Download unavailable" : "Téléchargement indisponible"}</span>;
   if (!clubOnly || unlocked || locallyUnlocked) return <><div>{modelOption}{actionButtons(false)}{error && <p role="alert" className="mt-2 text-sm font-bold text-red-600 dark:text-red-400">{error}</p>}</div>{coloringStudio}</>;

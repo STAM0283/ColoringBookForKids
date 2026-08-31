@@ -351,6 +351,7 @@ main input[type="file"]:focus-visible {
 .admin-help-bubble:hover { transform: translateY(-3px) scale(1.04); background: #205343 !important; box-shadow: 0 20px 40px -14px rgba(15,23,42,.72) !important; }
 .admin-help-bubble:focus-visible { outline: 0; box-shadow: 0 0 0 5px rgba(110,231,183,.35), 0 16px 35px -14px rgba(15,23,42,.65) !important; }
 .admin-help-bubble::before,.admin-help-bubble::after { content: none !important; }
+.no-auto-tooltip::before,.no-auto-tooltip::after { content: none !important; display: none !important; }
 .admin-help-label {
   position: absolute;
   right: calc(100% + .65rem);

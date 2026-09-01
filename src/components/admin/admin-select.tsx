@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 
 export type AdminSelectOption = { value: string; label: string };
 
-export function AdminSelect({ label, icon, value, options, onChange, className = "", placement = "down" }: { label: string; icon?: React.ReactNode; value: string; options: AdminSelectOption[]; onChange: (value: string) => void; className?: string; placement?: "up" | "down" | "inline" }) {
+export function AdminSelect({ label, icon, value, options, onChange, className = "", placement = "inline" }: { label: string; icon?: React.ReactNode; value: string; options: AdminSelectOption[]; onChange: (value: string) => void; className?: string; placement?: "up" | "down" | "inline" }) {
   const buttonRef = useRef<HTMLButtonElement>(null), menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false), [position, setPosition] = useState({ left: 0, top: 0, width: 0, maxHeight: 256 });
   const selected = options.find(option => option.value === value) ?? options[0];
@@ -14,10 +14,11 @@ export function AdminSelect({ label, icon, value, options, onChange, className =
   function toggle() {
     if (open) return setOpen(false);
     const rect = buttonRef.current?.getBoundingClientRect(); if (!rect) return;
-    const availableBelow = window.innerHeight - rect.bottom - 12, availableAbove = rect.top - 12;
-    const openUp = placement === "up" || (placement !== "down" && availableBelow < 180 && availableAbove > availableBelow);
-    const maxHeight = Math.max(120, Math.min(256, openUp ? availableAbove : availableBelow));
-    setPosition({ left: rect.left, top: openUp ? rect.top - Math.min(256, availableAbove) - 8 : rect.bottom + 8, width: rect.width, maxHeight });
+    const viewportGap=12,panelPadding=18,availableBelow=window.innerHeight-rect.bottom-viewportGap-panelPadding,availableAbove=rect.top-viewportGap-panelPadding;
+    const openUp=placement==="up"||(placement!=="down"&&availableBelow<176&&availableAbove>availableBelow);
+    const maxHeight=Math.max(112,Math.min(224,openUp?availableAbove:availableBelow));
+    const top=openUp?Math.max(viewportGap,rect.top-maxHeight-panelPadding-8):Math.min(rect.bottom+8,window.innerHeight-maxHeight-panelPadding-viewportGap);
+    setPosition({left:Math.max(viewportGap,Math.min(rect.left,window.innerWidth-rect.width-viewportGap)),top,width:Math.min(rect.width,window.innerWidth-viewportGap*2),maxHeight});
     setOpen(true);
   }
 

@@ -34,8 +34,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ segm
   }
 
   const type = mime[path.extname(target).toLowerCase()] ?? "application/octet-stream";
+  const forceDownload = new URL(request.url).searchParams.get("download") === "1";
   const range = request.headers.get("range");
-  const commonHeaders = { "Content-Type": type, "Accept-Ranges": "bytes", "Cache-Control": protectedPdf ? "private, no-store" : "public, max-age=31536000, immutable" };
+  const commonHeaders = { "Content-Type": type, "Accept-Ranges": "bytes", "Cache-Control": protectedPdf ? "private, no-store" : "public, max-age=31536000, immutable", ...(forceDownload ? { "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(path.basename(target))}` } : {}) };
   if (!range) return new Response(Readable.toWeb(fs.createReadStream(target)) as ReadableStream, { headers: { ...commonHeaders, "Content-Length": String(fileStat.size) } });
 
   const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());

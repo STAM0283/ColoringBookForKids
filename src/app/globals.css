@@ -416,6 +416,25 @@ main input[type="file"]:focus-visible {
   .asset-video-editor-body > :nth-child(5) { grid-area: publication; }
 }
 
+.dark main input[type="file"] {
+  border: 1px solid rgb(71 85 105 / .8);
+  background: rgb(2 6 23 / .72) !important;
+  color: #cbd5e1 !important;
+  color-scheme: dark;
+}
+
+.dark main input[type="file"]::file-selector-button {
+  border: 1px solid rgb(52 211 153 / .35);
+  background: linear-gradient(135deg, #047857, #0f766e) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 22px -13px rgb(16 185 129 / .85);
+}
+
+.dark main input[type="file"]:hover::file-selector-button {
+  border-color: rgb(110 231 183 / .65);
+  background: linear-gradient(135deg, #059669, #0d9488) !important;
+}
+
 /* Back-office sombre : les anciennes vues utilisent encore des couleurs Slate
    explicites. Cette couche les raccorde aux variables du thème sans altérer
    leur présentation claire. */
@@ -698,4 +717,130 @@ main input[type="file"]:focus-visible {
 .dark .admin-shell div.fixed form input::placeholder,
 .dark .admin-shell div.fixed form textarea::placeholder {
   color: rgb(148 163 184 / .72) !important;
+}
+
+/* Formulaires livre : surface nette, compacte et cohérente dans les deux thèmes. */
+.admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) {
+  isolation: isolate;
+}
+.admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) .min-h-80 {
+  min-height: 15rem;
+}
+.admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) label:has(input[type="radio"]) {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  border-radius: .9rem;
+  transition: border-color .18s ease, background-color .18s ease, color .18s ease, transform .18s ease;
+}
+.admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) label:has(input[type="radio"]:checked) {
+  border-color: rgb(5 150 105) !important;
+  background: rgb(236 253 245) !important;
+  color: rgb(4 120 87) !important;
+  box-shadow: 0 8px 22px -16px rgb(5 150 105 / .8);
+}
+.dark .admin-shell .markdown-editor-tabs {
+  border: 1px solid rgb(255 255 255 / .08);
+  background: rgb(2 6 23 / .45) !important;
+}
+.dark .admin-shell .markdown-editor-tabs button {
+  color: rgb(203 213 225) !important;
+}
+.dark .admin-shell .markdown-editor-tabs button.is-active {
+  border: 1px solid rgb(52 211 153 / .35);
+  background: linear-gradient(135deg, rgb(4 120 87), rgb(15 118 110)) !important;
+  color: rgb(248 250 252) !important;
+  box-shadow: 0 10px 24px -14px rgb(16 185 129 / .9) !important;
+}
+.dark .admin-shell .markdown-editor-tabs button.is-active svg {
+  color: rgb(167 243 208) !important;
+}
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) {
+  border-color: rgb(255 255 255 / .11) !important;
+  background: linear-gradient(145deg, rgb(15 23 42 / .96), rgb(17 24 39 / .98)) !important;
+  box-shadow: 0 28px 80px -48px rgb(0 0 0 / .9);
+}
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) input,
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) textarea,
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) select {
+  border-color: rgb(148 163 184 / .22) !important;
+  background: rgb(2 6 23 / .48) !important;
+  color: rgb(248 250 252) !important;
+}
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) label:has(input[type="radio"]:checked) {
+  border-color: rgb(52 211 153 / .72) !important;
+  background: rgb(16 185 129 / .16) !important;
+  color: rgb(110 231 183) !important;
+  box-shadow: 0 10px 26px -18px rgb(16 185 129 / .9);
+}
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) label:has(input[type="radio"]:not(:checked)) {
+  border-color: rgb(255 255 255 / .1) !important;
+  background: rgb(255 255 255 / .04) !important;
+  color: rgb(203 213 225) !important;
+}
+
+/* Formulaire Livre : densité maîtrisée sur desktop, confort tactile sur mobile. */
+.admin-shell .book-create-form {
+  --book-form-gap: 1rem;
+}
+.admin-shell .book-create-form .book-media-grid {
+  align-items: stretch;
+}
+.admin-shell .book-create-form .book-media-grid > div {
+  min-width: 0;
+  height: 100%;
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+.admin-shell .book-create-form .book-media-grid > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px -30px rgb(5 150 105 / .65);
+}
+.admin-shell .book-create-form .markdown-editor-tabs button {
+  min-height: 42px;
+  padding-inline: 1rem;
+}
+.admin-shell .book-create-form textarea[name="shortDescription"] {
+  min-height: 5.5rem;
+}
+.admin-shell .book-create-form .min-h-80 {
+  min-height: 15rem;
+}
+.admin-shell .book-create-form > div.rounded-2xl,
+.admin-shell .book-create-form > div.rounded-xl {
+  box-shadow: 0 14px 36px -32px rgb(15 23 42 / .45);
+}
+@media (min-width: 1024px) {
+  .admin-shell .book-create-form .book-media-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-shell .book-create-form .book-media-grid > label:first-child {
+    grid-column: 1 / -1;
+  }
+  .admin-shell .book-create-form .book-media-grid input[type="file"] {
+    min-height: 46px;
+  }
+}
+@media (max-width: 640px) {
+  .admin-shell .book-create-form {
+    gap: .875rem;
+  }
+  .admin-shell .book-create-form .book-media-grid {
+    gap: .75rem;
+  }
+  .admin-shell .book-create-form .book-media-grid > div {
+    padding: .875rem;
+  }
+  .admin-shell .book-create-form .markdown-editor-tabs {
+    width: 100%;
+  }
+  .admin-shell .book-create-form .markdown-editor-tabs button {
+    flex: 1;
+  }
+  .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) .min-h-80 {
+    min-height: 12rem;
+  }
+  .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) label:has(input[type="radio"]) {
+    flex: 1 1 8rem;
+    justify-content: center;
+  }
 }

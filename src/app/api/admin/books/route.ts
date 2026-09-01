@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { desc, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -9,6 +10,7 @@ import { storageService } from "@/lib/storage/local-storage";
 import { slugify } from "@/lib/utils";
 
 export const runtime = "nodejs";
+const bookPdf = alias(media, "admin_book_pdf");
 
 const schema = z.object({
   language: z.enum(["FR", "EN"]),
@@ -29,8 +31,8 @@ const schema = z.object({
 export async function GET() {
   if ((await auth())?.user.role !== "ADMIN") return Response.json({ message: "Non autorisé." }, { status: 401 });
   try {
-    const items = await db.select({ book: books, cover: media }).from(books)
-      .leftJoin(media, eq(books.coverMediaId, media.id)).orderBy(desc(books.updatedAt));
+    const items = await db.select({ book: books, cover: media, pdf: bookPdf }).from(books)
+      .leftJoin(media, eq(books.coverMediaId, media.id)).leftJoin(bookPdf, eq(books.pdfMediaId, bookPdf.id)).orderBy(desc(books.updatedAt));
     return Response.json({ items });
   } catch (error) {
     console.error("Impossible de charger les livres", error);
@@ -49,6 +51,7 @@ export async function POST(request: Request) {
   }
   const cover = form.get("cover");
   const video = form.get("video");
+  const pdf = form.get("pdf");
   const galleryFiles = form.getAll("gallery").filter((value): value is File => value instanceof File && value.size > 0);
   if (galleryFiles.length > 12) return Response.json({ message: "La galerie est limitée à 12 images." }, { status: 400 });
   const parsed = schema.safeParse({
@@ -59,6 +62,7 @@ export async function POST(request: Request) {
     featured: form.get("featured") === "on", published: form.get("published") === "on",
   });
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message }, { status: 400 });
+  if (pdf instanceof File && pdf.size > 0 && parsed.data.pricingType !== "FREE") return Response.json({ message: "Un fichier PDF peut uniquement être associé à un livre gratuit." }, { status: 400 });
 
   try {
     let coverMediaId: string | null = null;
@@ -77,9 +81,16 @@ export async function POST(request: Request) {
       await db.insert(media).values({ id: videoMediaId, type: "VIDEO", filename: stored.filename, originalName: video.name, mimeType: stored.mimeType, size: stored.size, path: stored.path });
     }
 
+    let pdfMediaId: string | null = null;
+    if (pdf instanceof File && pdf.size) {
+      const stored = await storageService.uploadFile(pdf, "PDF");
+      pdfMediaId = crypto.randomUUID();
+      await db.insert(media).values({ id: pdfMediaId, type: "PDF", filename: stored.filename, originalName: pdf.name, mimeType: stored.mimeType, size: stored.size, path: stored.path });
+    }
+
     const id = crypto.randomUUID();
     const slug = `${slugify(parsed.data.title)}-${id.slice(0, 6)}`;
-    await db.insert(books).values({ id, slug, language:parsed.data.language, title: parsed.data.title, shortDescription: parsed.data.shortDescription, description: parsed.data.description, categoryId: parsed.data.categoryId, ageMin: parsed.data.ageMin, ageMax: parsed.data.ageMax, pageCount: parsed.data.pageCount, amazonUrl: parsed.data.amazonUrl || null, pricingType: parsed.data.pricingType, priceCents: parsed.data.pricingType === "PAID" ? parsed.data.priceCents : null, priceUpdatedAt: parsed.data.pricingType === "PAID" && parsed.data.priceCents ? new Date() : null, featured: parsed.data.featured, published: parsed.data.published, coverMediaId, videoMediaId, publishedAt: parsed.data.published ? new Date() : null });
+    await db.insert(books).values({ id, slug, language:parsed.data.language, title: parsed.data.title, shortDescription: parsed.data.shortDescription, description: parsed.data.description, categoryId: parsed.data.categoryId, ageMin: parsed.data.ageMin, ageMax: parsed.data.ageMax, pageCount: parsed.data.pageCount, amazonUrl: parsed.data.amazonUrl || null, pricingType: parsed.data.pricingType, priceCents: parsed.data.pricingType === "PAID" ? parsed.data.priceCents : null, priceUpdatedAt: parsed.data.pricingType === "PAID" && parsed.data.priceCents ? new Date() : null, featured: parsed.data.featured, published: parsed.data.published, coverMediaId, videoMediaId, pdfMediaId, publishedAt: parsed.data.published ? new Date() : null });
 
     for (const [sortOrder, image] of galleryFiles.entries()) {
       await storageService.validateFile(image, "IMAGE");

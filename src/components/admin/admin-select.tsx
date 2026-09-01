@@ -26,8 +26,9 @@ export function AdminSelect({ label, icon, value, options, onChange, className =
     if (!open) return;
     const closeOutside = (event: PointerEvent) => { const target = event.target as Node; if (!buttonRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false); };
     const close = () => setOpen(false);
-    document.addEventListener("pointerdown", closeOutside); window.addEventListener("resize", close); window.addEventListener("scroll", close, true);
-    return () => { document.removeEventListener("pointerdown", closeOutside); window.removeEventListener("resize", close); window.removeEventListener("scroll", close, true); };
+    const closeOnOuterScroll = (event: Event) => { const target=event.target as Node|null; if(target&&menuRef.current?.contains(target))return; setOpen(false); };
+    document.addEventListener("pointerdown", closeOutside); window.addEventListener("resize", close); window.addEventListener("scroll", closeOnOuterScroll, true);
+    return () => { document.removeEventListener("pointerdown", closeOutside); window.removeEventListener("resize", close); window.removeEventListener("scroll", closeOnOuterScroll, true); };
   }, [open]);
 
   return <div className={`relative ${className}`}>
@@ -36,6 +37,6 @@ export function AdminSelect({ label, icon, value, options, onChange, className =
       <span className="min-w-0 flex-1"><span className="block text-[10px] font-black uppercase tracking-[.15em] text-slate-400 dark:text-foreground/45">{label}</span><span className="block truncate text-sm font-black text-slate-800 dark:text-foreground">{selected?.label}</span></span>
       <ChevronDown size={18} className={`shrink-0 text-slate-400 transition ${open ? "rotate-180" : ""}`}/>
     </button>
-    {open && createPortal(<div ref={menuRef} role="listbox" aria-label={label} className="fixed z-[10000] overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/15 dark:bg-card p-2 shadow-[0_22px_60px_-18px_rgba(15,23,42,.45)]" style={{ left: position.left, top: position.top, width: position.width }}><div className="space-y-1 overflow-y-auto" style={{ maxHeight: position.maxHeight }}>{options.map(option => <button key={option.value || "empty"} role="option" aria-selected={option.value === value} type="button" onClick={() => { onChange(option.value); setOpen(false); }} className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition ${option.value === value ? "bg-emerald-700 text-white" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 dark:text-foreground/75 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"}`}><span className="truncate">{option.label}</span>{option.value === value && <CheckCircle2 size={17}/>}</button>)}</div></div>, document.body)}
+    {open && createPortal(<div ref={menuRef} role="listbox" aria-label={label} className="fixed z-[10000] overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/15 dark:bg-card p-2 shadow-[0_22px_60px_-18px_rgba(15,23,42,.45)]" style={{ left: position.left, top: position.top, width: position.width }}><div className="space-y-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-gutter:stable]" style={{ maxHeight: position.maxHeight }}>{options.map(option => <button key={option.value || "empty"} role="option" aria-selected={option.value === value} type="button" onClick={() => { onChange(option.value); setOpen(false); }} className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition ${option.value === value ? "bg-emerald-700 text-white" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 dark:text-foreground/75 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"}`}><span className="truncate">{option.label}</span>{option.value === value && <CheckCircle2 size={17}/>}</button>)}</div></div>, document.body)}
   </div>;
 }

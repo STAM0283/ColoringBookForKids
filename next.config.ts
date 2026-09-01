@@ -27,6 +27,14 @@ const securityHeaders = [
   ...(production ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }] : []),
 ];
 
+// Les médias restent intégrables uniquement par le site lui-même. Cela permet
+// à la liseuse PDF interne de fonctionner sans autoriser des sites tiers à
+// encadrer le contenu.
+const embeddedMediaHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy.replace("frame-ancestors 'none'", "frame-ancestors 'self'") },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+];
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
@@ -46,7 +54,12 @@ const nextConfig: NextConfig = {
     imageSizes: [32, 48, 64, 96, 128, 256, 384],
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      // Placée après la règle globale : Next.js applique la dernière valeur
+      // lorsqu'une même clé correspond plusieurs fois à une URL.
+      { source: "/media/:segments*", headers: embeddedMediaHeaders },
+    ];
   },
 };
 

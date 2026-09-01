@@ -13,7 +13,7 @@ import {cn} from "@/lib/utils";
 import {useReliableTheme} from "@/hooks/use-reliable-theme";
 
 type NavigationItem=PublicRoute|"gallery";
-const navigation:NavigationItem[]=["home","books","activities","coloring","gallery","blog","about"];
+const navigation:NavigationItem[]=["home","books","activities","gallery","blog","about"];
 
 export function SiteHeader() {
   const[open,setOpen]=useState(false),[galleryOpen,setGalleryOpen]=useState(false),[mobileGalleryOpen,setMobileGalleryOpen]=useState(false),[mounted,setMounted]=useState(false);

@@ -666,3 +666,36 @@ main input[type="file"]:focus-visible {
   border-color: rgb(52 211 153 / .72) !important;
   box-shadow: 0 0 0 4px rgb(16 185 129 / .13);
 }
+
+/* Fenêtres de la galerie : les règles génériques du back-office utilisent
+   !important, ces états explicites doivent donc rester prioritaires. */
+.dark .admin-shell .image-gallery-dialog-tab {
+  color: rgb(203 213 225) !important;
+}
+.dark .admin-shell .image-gallery-dialog-tab:hover {
+  background: rgb(255 255 255 / .06) !important;
+  color: rgb(248 250 252) !important;
+}
+.dark .admin-shell .image-gallery-dialog-tab.is-active {
+  background: linear-gradient(135deg, rgb(52 211 153), rgb(20 184 166)) !important;
+  color: rgb(2 44 34) !important;
+  box-shadow: 0 10px 24px -14px rgb(16 185 129 / .9) !important;
+}
+.dark .admin-shell .image-gallery-dialog-tab.is-active svg {
+  color: rgb(2 44 34) !important;
+}
+.dark .admin-shell div.fixed form input,
+.dark .admin-shell div.fixed form textarea {
+  border-color: rgb(255 255 255 / .14) !important;
+  background: rgb(2 6 23 / .42) !important;
+  color: rgb(248 250 252) !important;
+}
+.dark .admin-shell div.fixed form input:focus,
+.dark .admin-shell div.fixed form textarea:focus {
+  border-color: rgb(52 211 153 / .7) !important;
+  box-shadow: 0 0 0 4px rgb(16 185 129 / .14) !important;
+}
+.dark .admin-shell div.fixed form input::placeholder,
+.dark .admin-shell div.fixed form textarea::placeholder {
+  color: rgb(148 163 184 / .72) !important;
+}

@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const published=String(form.get("published")||"")==="true",language=form.get("language")==="EN"?"EN" as const:"FR" as const;
     const accessLevel=String(form.get("accessLevel")||"")==="CLUB"?"CLUB" as const:"PUBLIC" as const;
     const creativeIdea=String(form.get("creativeIdea")||"").trim();
-    if(creativeIdea.length>500)return Response.json({message:"L’idée créative ne peut pas dépasser 500 caractères."},{status:400});
+    if(creativeIdea.length>2000)return Response.json({message:"La description ne peut pas dépasser 2 000 caractères."},{status:400});
     await db.insert(media).values({id,type,filename:stored.filename,originalName:file.name,mimeType:stored.mimeType,size:stored.size,width,height,path:stored.path,alt:String(form.get("alt")||"").trim()||null,creativeIdea:creativeIdea||null,language,galleryEnabled:true,published,accessLevel});
     const categoryId=String(form.get("categoryId")||"").trim();
     if(categoryId)await db.insert(mediaCategories).values({mediaId:id,categoryId});

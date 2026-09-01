@@ -10,7 +10,7 @@ async function admin() { return (await auth())?.user.role === "ADMIN"; }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!await admin()) return Response.json({ message: "Non autorisé." }, { status: 401 });
-  const parsed = z.object({ alt: z.string().max(300), creativeIdea:z.string().max(500).optional(), categoryId: z.string().nullable().optional(), characterIds:z.array(z.string().uuid()).optional(), published: z.boolean(), accessLevel: z.enum(["PUBLIC", "CLUB"]) }).safeParse(await request.json().catch(() => null));
+  const parsed = z.object({ alt: z.string().max(300), creativeIdea:z.string().max(2000).optional(), categoryId: z.string().nullable().optional(), characterIds:z.array(z.string().uuid()).optional(), published: z.boolean(), accessLevel: z.enum(["PUBLIC", "CLUB"]) }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ message: "Paramètres de l’image invalides." }, { status: 400 });
   const { id } = await params;
   const [item] = await db.select({ id: media.id }).from(media).where(and(eq(media.id, id), eq(media.galleryEnabled, true))).limit(1);

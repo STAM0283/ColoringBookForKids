@@ -23,18 +23,18 @@ type Props = {
 
 export function MobileColoringToolbar(props: Props) {
   return <aside className="mobile-coloring-toolbar lg:hidden" aria-label={props.en ? "Colouring tools" : "Outils de coloriage"}>
-    <div className="grid grid-cols-8 gap-1 sm:grid-cols-12" aria-label={props.en ? "Colours" : "Couleurs"}>
+    <div className="mobile-coloring-colors" aria-label={props.en ? "Colours" : "Couleurs"}>
       {props.colors.map(value => <button
         key={value}
         type="button"
         aria-label={`${props.en ? "Colour" : "Couleur"} ${value}`}
         aria-pressed={!props.eraser && props.color === value}
         onClick={() => { props.setColor(value); props.setEraser(false); }}
-        className={`grid aspect-square min-w-0 place-items-center rounded-lg border transition active:scale-90 ${!props.eraser && props.color === value ? "scale-110 border-foreground ring-2 ring-primary/50" : "border-white/60 dark:border-white/20"}`}
+        className={`mobile-coloring-swatch grid shrink-0 snap-center place-items-center rounded-full border-2 shadow-sm transition active:scale-90 ${!props.eraser && props.color === value ? "border-foreground ring-4 ring-primary/35 dark:border-white" : "border-white/70 dark:border-white/20"}`}
         style={{ backgroundColor: value }}
       >{!props.eraser && props.color === value && <Check size={13} className={value === "#111827" ? "text-white" : "text-slate-950"}/>}</button>)}
     </div>
-    <div className={`mt-2 grid gap-1.5 ${props.hasModel?"grid-cols-7":"grid-cols-6"}`}>
+    <div className={`mobile-coloring-actions grid gap-1.5 ${props.hasModel?"grid-cols-7":"grid-cols-6"}`}>
       {props.hasModel&&<button type="button" aria-label={props.en ? "Open colour model" : "Ouvrir le modèle en couleur"} onClick={props.openModel} className="mobile-coloring-action bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-300"><ImageIcon size={19}/><span className="sr-only">{props.en ? "Model" : "Modèle"}</span></button>}
       <button type="button" aria-label={props.en ? "Eraser" : "Gomme"} aria-pressed={props.eraser} onClick={() => props.setEraser(true)} className={`mobile-coloring-action ${props.eraser ? "bg-primary text-white" : ""}`}><Eraser size={19}/><span className="sr-only">{props.en ? "Erase" : "Gomme"}</span></button>
       <button type="button" aria-label={props.en ? "Undo" : "Annuler"} disabled={props.undoDisabled} onClick={props.undo} className="mobile-coloring-action"><Undo2 size={19}/><span className="sr-only">{props.en ? "Undo" : "Annuler"}</span></button>

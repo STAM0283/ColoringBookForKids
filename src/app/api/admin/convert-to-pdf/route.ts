@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { activities, activityGallery, activityTypes, media } from "@/db/schema";
+import { activities, activityGallery, activityTypes, books, media } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { imagesToPdf } from "@/lib/images-to-pdf";
@@ -17,7 +17,11 @@ export async function POST(request: Request) {
   const cover = requestedCover instanceof File && requestedCover.size > 0 ? requestedCover : null;
   const title = String(form.get("title") || "").trim();
   const description = String(form.get("description") || "").trim();
-  const accessLevel = form.get("accessLevel") === "CLUB" ? "CLUB" : "PUBLIC";
+  const rawAccess = form.get("accessLevel") || "PUBLIC";
+  if (!["PUBLIC", "CLUB", "BUYER"].includes(String(rawAccess))) return Response.json({ message: "Accès invalide." }, { status: 400 });
+  const accessLevel = rawAccess as "PUBLIC" | "CLUB" | "BUYER";
+  const accessBookId = accessLevel === "BUYER" ? String(form.get("accessBookId") || "") : null;
+  if (accessLevel === "BUYER" && (!accessBookId || !await db.query.books.findFirst({ where: eq(books.id, accessBookId) }))) return Response.json({ message: "Sélectionnez le livre donnant accès à ce bonus." }, { status: 400 });
   const language = form.get("language") === "EN" ? "EN" : "FR";
   const activityTypeId = String(form.get("activityTypeId") || "") || null;
   if (title.length < 2 || title.length > 150) return Response.json({ message: "Le titre doit contenir entre 2 et 150 caractères." }, { status: 400 });
@@ -50,13 +54,13 @@ export async function POST(request: Request) {
       previewMediaId = crypto.randomUUID();
       await db.insert(media).values({ id: previewMediaId, type: "IMAGE", filename: previewStored.filename, originalName: cover.name, mimeType: previewStored.mimeType, size: previewStored.size, path: previewStored.path, alt: `Couverture de ${title}`, language });
     }
-    await db.insert(activities).values({ id: activityId, language, title, slug: `${slugify(title) || "activite"}-${activityId.slice(0, 6)}`, description, activityTypeId, previewMediaId, pdfMediaId: mediaId, pageCount: images.length, accessLevel, published: true, publishedAt: new Date() });
+    await db.insert(activities).values({ id: activityId, language, title, slug: `${slugify(title) || "activite"}-${activityId.slice(0, 6)}`, description, activityTypeId, previewMediaId, pdfMediaId: mediaId, pageCount: images.length, accessLevel, accessBookId, published: true, publishedAt: new Date() });
     await db.insert(activityGallery).values(pages.map((page, sortOrder) => ({ id: crypto.randomUUID(), activityId, mediaId: page.id, modelMediaId:page.modelId,sortOrder })));
     await replaceActivityCategories(activityId, idList(form.get("categoryIds")));
     revalidatePath("/");
     revalidatePath("/activites");
     revalidatePath("/en");
     revalidatePath("/en/activities");
-    return Response.json({ message: accessLevel === "CLUB" ? "PDF créé et réservé au Club Instagram." : "PDF créé et publié dans les activités gratuites.", id: activityId, filename }, { status: 201 });
+    return Response.json({ message: accessLevel === "BUYER" ? "PDF créé et réservé aux acheteurs du livre sélectionné." : accessLevel === "CLUB" ? "PDF créé et réservé au Club Instagram." : "PDF créé et publié dans les activités gratuites.", id: activityId, filename }, { status: 201 });
   } catch (error) { return Response.json({ message: error instanceof Error ? error.message : "Conversion impossible." }, { status: 400 }); }
 }

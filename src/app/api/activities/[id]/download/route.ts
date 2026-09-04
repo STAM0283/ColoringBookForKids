@@ -7,6 +7,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { activities, activityGallery, clubSessions, media } from "@/db/schema";
+import { hasContentAccess } from "@/lib/content-access";
 import { getClubSession } from "@/lib/club-access";
 import { imagesWithModelsToPdf } from "@/lib/images-to-pdf";
 
@@ -21,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!result.activity.downloadEnabled && !isAdmin) return Response.json({ message: "Le téléchargement de cette activité est temporairement désactivé." }, { status: 403 });
 
   const clubSession = result.activity.accessLevel === "CLUB" && !isAdmin ? await getClubSession() : null;
-  if (result.activity.accessLevel === "CLUB" && !isAdmin && !clubSession) return Response.json({ message: "Cette activité est réservée au Club.", code: "CLUB_REQUIRED" }, { status: 403 });
+  if (!isAdmin && !await hasContentAccess(result.activity.accessLevel, result.activity.accessBookId)) return Response.json({ message: "Un code parent est nécessaire pour ce PDF.", code: "ACCESS_REQUIRED" }, { status: 403 });
 
   const root = path.resolve(/*turbopackIgnore: true*/ process.env.MEDIA_ROOT ?? "./data/media");
   const target = path.resolve(root, result.pdf.path);

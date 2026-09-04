@@ -2,10 +2,11 @@ import fs from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { activities, media } from "@/db/schema";
-import { hasClubAccess } from "@/lib/club-access";
+import { activities, books, media } from "@/db/schema";
+import { hasContentAccess } from "@/lib/content-access";
+import { auth } from "@/auth";
 
 export const runtime = "nodejs";
 const mime: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".avif": "image/avif", ".pdf": "application/pdf", ".mp4": "video/mp4" };
@@ -25,12 +26,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ segm
   }
 
   const relativePath = segments.join("/");
-  let protectedPdf = false;
-  if (path.extname(target).toLowerCase() === ".pdf") {
-    const [protectedActivity] = await db.select({ id: activities.id }).from(activities).innerJoin(media, eq(activities.pdfMediaId, media.id))
-      .where(and(eq(media.path, relativePath), eq(activities.accessLevel, "CLUB"))).limit(1);
-    protectedPdf = Boolean(protectedActivity);
-    if (protectedActivity && !await hasClubAccess()) return new Response("Accès Club requis", { status: 403, headers: { "Cache-Control": "no-store" } });
+  const protectedPdf = path.extname(target).toLowerCase() === ".pdf";
+  if (protectedPdf) {
+    const [linkedActivities, linkedBooks] = await Promise.all([
+      db.select({ item: activities }).from(activities).innerJoin(media, eq(activities.pdfMediaId, media.id)).where(eq(media.path, relativePath)),
+      db.select({ item: books }).from(books).innerJoin(media, eq(books.pdfMediaId, media.id)).where(eq(media.path, relativePath)),
+    ]);
+    const isAdmin = (await auth())?.user.role === "ADMIN";
+    if (!isAdmin) {
+      for (const { item } of linkedActivities) {
+        if (!item.published || !item.downloadEnabled || !await hasContentAccess(item.accessLevel, item.accessBookId)) return new Response("Accès réservé", { status: 403, headers: { "Cache-Control": "private, no-store" } });
+      }
+      for (const { item } of linkedBooks) {
+        if (!item.published || !await hasContentAccess(item.accessLevel, item.id)) return new Response("Accès réservé", { status: 403, headers: { "Cache-Control": "private, no-store" } });
+      }
+    }
   }
 
   const type = mime[path.extname(target).toLowerCase()] ?? "application/octet-stream";

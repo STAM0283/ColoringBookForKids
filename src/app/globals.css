@@ -779,6 +779,9 @@ main input[type="file"]:focus-visible {
   background: rgb(2 6 23 / .48) !important;
   color: rgb(248 250 252) !important;
 }
+.dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) .book-number-field input {
+  background: transparent !important;
+}
 .dark .admin-shell form:has(input[name="pageCount"]):has(input[name="cover"]) label:has(input[type="radio"]:checked) {
   border-color: rgb(52 211 153 / .72) !important;
   background: rgb(16 185 129 / .16) !important;
@@ -789,6 +792,12 @@ main input[type="file"]:focus-visible {
   border-color: rgb(255 255 255 / .1) !important;
   background: rgb(255 255 255 / .04) !important;
   color: rgb(203 213 225) !important;
+}
+
+/* Les choix d'accès s'adaptent au panneau, pas seulement à la fenêtre. */
+.pdf-access-settings { container-type: inline-size; }
+@container (min-width: 640px) {
+  .pdf-access-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Formulaire Livre : densité maîtrisée sur desktop, confort tactile sur mobile. */

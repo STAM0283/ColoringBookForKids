@@ -33,6 +33,8 @@
     {"idx":10,"version":"7","when":1788170400000,"tag":"0010_activity_gallery","breakpoints":true},
     {"idx":11,"version":"7","when":1788256800000,"tag":"0011_activity_types","breakpoints":true},
     {"idx":12,"version":"7","when":1788343200000,"tag":"0012_activity_page_models","breakpoints":true},
-    {"idx":13,"version":"7","when":1788429600000,"tag":"0013_book_pdf","breakpoints":true}
+    {"idx":13,"version":"7","when":1788429600000,"tag":"0013_book_pdf","breakpoints":true},
+    {"idx":14,"version":"7","when":1788516000000,"tag":"0014_book_activity_type","breakpoints":true},
+    {"idx":15,"version":"7","when":1788602400000,"tag":"0015_content_access","breakpoints":true}
   ]
 }

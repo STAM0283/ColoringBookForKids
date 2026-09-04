@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { activities, activityGallery, activityTypes, media } from "@/db/schema";
+import { activities, activityGallery, activityTypes, books, media } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 import { imagesToPdf } from "@/lib/images-to-pdf";
 import { idList, replaceActivityCategories } from "@/lib/activity-relations";
@@ -16,7 +16,8 @@ const schema = z.object({
   language: z.enum(["FR","EN"]).optional(),
   description: z.string().trim().min(10).max(5000).optional(),
   published: z.boolean().optional(),
-  accessLevel: z.enum(["PUBLIC", "CLUB"]).optional(),
+  accessLevel: z.enum(["PUBLIC", "CLUB", "BUYER"]).optional(),
+  accessBookId: z.string().uuid().nullable().optional(),
   downloadEnabled: z.boolean().optional(),
   activityTypeId: z.string().nullable().optional(),
 }).refine(value => Object.values(value).some(item => item !== undefined));
@@ -43,10 +44,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     categoryIds = idList(form.get("categoryIds"));
     removedModelIds=idList(form.get("removedModelIds"));
     removeCover=form.get("removeCover")==="true";
-    values = { title: form.get("title"), description: form.get("description"), activityTypeId:String(form.get("activityTypeId")||"")||null, accessLevel: form.get("accessLevel"), published: form.get("published") === "true", downloadEnabled: form.get("downloadEnabled") === "true" };
+    values = { title: form.get("title"), description: form.get("description"), activityTypeId:String(form.get("activityTypeId")||"")||null, accessLevel: form.get("accessLevel"), accessBookId: form.get("accessBookId") || null, published: form.get("published") === "true", downloadEnabled: form.get("downloadEnabled") === "true" };
   } else values = await request.json().catch(() => null);
   const parsed = schema.safeParse(values);
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message || "Données invalides." }, { status: 400 });
+  const effectiveAccess = parsed.data.accessLevel ?? current.accessLevel;
+  const accessBookId = effectiveAccess === "BUYER" ? (parsed.data.accessBookId === undefined ? current.accessBookId : parsed.data.accessBookId) : null;
+  if (effectiveAccess === "BUYER" && (!accessBookId || !await db.query.books.findFirst({ where: eq(books.id, accessBookId) }))) return Response.json({ message: "Sélectionnez le livre donnant accès à ce bonus." }, { status: 400 });
+  parsed.data.accessBookId = accessBookId;
   if (parsed.data.activityTypeId) {
     const expectedLanguage = parsed.data.language || current.language;
     const [validType] = await db.select({ id: activityTypes.id }).from(activityTypes).where(and(eq(activityTypes.id, parsed.data.activityTypeId), eq(activityTypes.language, expectedLanguage))).limit(1);

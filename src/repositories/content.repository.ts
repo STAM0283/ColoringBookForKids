@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, getTableColumns, ilike, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, getTableColumns, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { activities, activityCategories, activityGallery, activityTypes, bookGallery, books, categories, media, posts, vlogs } from "@/db/schema";
@@ -21,7 +21,7 @@ export const contentRepository = {
   async books(options: ListingOptions = {}) {
     const pagination = bounds(options);
     const search = searchPattern(options.search);
-    const where = and(eq(books.published, true), eq(books.language, options.language ?? "FR"), search ? or(ilike(books.title, search), ilike(books.shortDescription, search)) : undefined, options.category ? eq(categories.slug, options.category) : undefined, options.pricing ? eq(books.pricingType, options.pricing) : undefined);
+    const where = and(eq(books.published, true), eq(books.language, options.language ?? "FR"), search ? or(ilike(books.title, search), ilike(books.shortDescription, search)) : undefined, options.category ? eq(categories.slug, options.category) : undefined, options.pricing ? eq(books.pricingType, options.pricing) : undefined, options.activityType ? inArray(books.activityTypeId, db.select({ id: activityTypes.id }).from(activityTypes).where(and(eq(activityTypes.slug, options.activityType), eq(activityTypes.language, options.language ?? "FR")))) : undefined);
     const dateOrder = options.sort === "oldest" ? asc(books.publishedAt) : desc(books.publishedAt);
     const [rows, [{ count }]] = await Promise.all([
       db.select({ book: books, category: categories, cover: media }).from(books).leftJoin(categories, eq(books.categoryId, categories.id)).leftJoin(media, eq(books.coverMediaId, media.id)).where(where).orderBy(desc(books.featured), dateOrder, asc(books.sortOrder)).limit(pagination.pageSize).offset(pagination.offset),
@@ -38,7 +38,15 @@ export const contentRepository = {
   async bookCategories(language: ContentLanguage = "FR") {
     const rows = await db.select({ name: categories.name, slug: categories.slug, color: categories.color })
       .from(categories)
-      .where(and(eq(categories.language, language), inArray(categories.scope, ["BOOK", "ACTIVITY"])))
+      .where(and(
+        eq(categories.language, language),
+        inArray(categories.scope, ["BOOK", "ACTIVITY"]),
+        exists(db.select({ id: books.id }).from(books).where(and(
+          eq(books.categoryId, categories.id),
+          eq(books.published, true),
+          eq(books.language, language),
+        ))),
+      ))
       .orderBy(asc(categories.name));
 
     // Le gestionnaire actuel partage les catégories d'activités avec les

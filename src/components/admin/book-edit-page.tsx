@@ -9,9 +9,11 @@ import { BookGallery, BookVideoManager } from "./book-management-list";
 import { MarkdownEditor } from "./markdown-editor";
 import { AdminSelect } from "./admin-select";
 import { AdminFormField } from "./admin-form-field";
+import { PdfAccessSettings, type AccessLevel } from "./pdf-access-settings";
+import { BookDetailsFields } from "./book-details-fields";
 
 type Book = {
-  id: string; language: "FR" | "EN"; title: string; shortDescription: string; description: string; categoryId: string | null;
+  accessLevel: AccessLevel; id: string; language: "FR" | "EN"; title: string; shortDescription: string; description: string; categoryId: string | null; activityTypeId: string | null;
   ageMin: number; ageMax: number; pageCount: number; amazonUrl: string | null; pricingType: "FREE" | "PAID";
   priceCents: number | null; featured: boolean; published: boolean;
 };
@@ -24,8 +26,9 @@ export function BookEditPage({ bookId }: { bookId: string }) {
   const [row, setRow] = useState<Row | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [description, setDescription] = useState("");
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>("PUBLIC");
   const [pricing, setPricing] = useState<"FREE" | "PAID">("PAID");
-  const [categoryId, setCategoryId] = useState("");
+  const [activityTypeId, setActivityTypeId] = useState("");
   const [language, setLanguage] = useState<"FR" | "EN">("FR");
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export function BookEditPage({ bookId }: { bookId: string }) {
     ]).then(([bookData, categoryData]: [{ items?: Row[] }, { items?: Category[] }]) => {
       const found = bookData.items?.find(item => item.book.id === bookId) ?? null;
       setRow(found); setCategories(categoryData.items ?? []);
-      if (found) { setDescription(htmlToMarkdown(found.book.description)); setPricing(found.book.pricingType); setCategoryId(found.book.categoryId ?? ""); setLanguage(found.book.language); }
+      if (found) { setDescription(htmlToMarkdown(found.book.description)); setPricing(found.book.pricingType); setAccessLevel(found.book.accessLevel ?? "PUBLIC"); setLanguage(found.book.language); setActivityTypeId(found.book.activityTypeId ?? ""); }
     }).catch(() => setMessage({ ok: false, text: "Impossible de charger ce livre." })).finally(() => setLoading(false));
   }, [bookId]);
 
@@ -78,7 +81,7 @@ export function BookEditPage({ bookId }: { bookId: string }) {
       <div className="mb-7 flex items-center justify-between gap-4 border-b border-slate-100 pb-5 dark:border-white/10"><div><p className="text-[10px] font-black uppercase tracking-[.18em] text-emerald-700 dark:text-emerald-300">Informations principales</p><h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Identité du livre</h2></div><span className={`rounded-full px-3 py-1.5 text-xs font-black ${language==="EN"?"bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-300":"bg-violet-50 text-violet-700 dark:bg-violet-400/10 dark:text-violet-300"}`}>{language==="EN"?"🇬🇧 Version anglaise":"🇫🇷 Version française"}</span></div>
       <div className="grid gap-8 lg:grid-cols-[1fr_310px]">
         <div className="grid gap-5">
-          <div className="grid items-end gap-4 sm:grid-cols-[240px_1fr]"><div><input type="hidden" name="language" value={language}/><AdminSelect label="Langue du livre" icon={<Languages size={18}/>} value={language} options={[{value:"FR",label:"🇫🇷 Français"},{value:"EN",label:"🇬🇧 Anglais"}]} onChange={value=>setLanguage(value as "FR"|"EN")}/></div><Field label="Titre"><input className={input} name="title" required minLength={2} maxLength={150} defaultValue={book.title}/></Field></div>
+          <div className="grid items-end gap-4 sm:grid-cols-[240px_1fr]"><div><input type="hidden" name="language" value={language}/><AdminSelect label="Langue du livre" icon={<Languages size={18}/>} value={language} options={[{value:"FR",label:"🇫🇷 Français"},{value:"EN",label:"🇬🇧 Anglais"}]} onChange={value=>{setLanguage(value as "FR"|"EN");setActivityTypeId("")}}/></div><Field label="Titre"><input className={input} name="title" required minLength={2} maxLength={150} defaultValue={book.title}/></Field></div>
           <Field label="Résumé court"><textarea className={`${input} min-h-24 py-3`} name="shortDescription" required minLength={10} maxLength={300} defaultValue={book.shortDescription}/></Field>
           <MarkdownEditor name="description" value={description} onChange={setDescription}/>
         </div>
@@ -90,15 +93,11 @@ export function BookEditPage({ bookId }: { bookId: string }) {
         </aside>
       </div>
 
-      <div className="mt-7 grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Âge minimum"><input className={input} name="ageMin" type="number" min="0" max="18" defaultValue={book.ageMin} required/></Field>
-        <Field label="Âge maximum"><input className={input} name="ageMax" type="number" min="0" max="18" defaultValue={book.ageMax} required/></Field>
-        <Field label="Nombre de pages"><input className={input} name="pageCount" type="number" min="1" max="1000" defaultValue={book.pageCount} required/></Field>
-        <div><input type="hidden" name="categoryId" value={categoryId}/><AdminSelect label="Catégorie" value={categoryId} options={[{value:"",label:"Sans catégorie"},...categories.map(category=>({value:category.id,label:category.name}))]} onChange={setCategoryId}/></div>
-      </div>
+      <div className="mt-7"><BookDetailsFields key={book.id} language={language} categories={categories} activityTypeId={activityTypeId} onActivityTypeChange={setActivityTypeId} initialCategoryId={book.categoryId ?? ""} ageMin={book.ageMin ?? 3} ageMax={book.ageMax ?? 8} pageCount={book.pageCount ?? 40}/></div>
 
-      <section className="mt-7 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 dark:border-emerald-400/25 dark:bg-emerald-400/[.07]"><h2 className="font-black text-slate-950 dark:text-white">Tarification et destination</h2><div className="mt-4 flex flex-wrap gap-3">{(["FREE", "PAID"] as const).map(value => <label key={value} className={`cursor-pointer rounded-xl border px-5 py-3 font-bold transition ${pricing === value ? "border-emerald-600 bg-white text-emerald-700 shadow-sm dark:border-emerald-400 dark:bg-emerald-400/15 dark:text-emerald-300" : "bg-white text-slate-500 dark:border-white/10 dark:bg-white/[.045] dark:text-slate-300"}`}><input className="mr-2 accent-emerald-700" type="radio" checked={pricing === value} onChange={() => setPricing(value)}/>{value === "FREE" ? "Gratuit" : "Payant"}</label>)}</div>{pricing === "PAID" && <div className="mt-4 grid items-end gap-4 md:grid-cols-2"><Field label="Prix indicatif Amazon (€)"><input className={input} name="price" type="number" min="0.01" step="0.01" defaultValue={book.priceCents ? (book.priceCents / 100).toFixed(2) : ""}/></Field><Field label="Lien Amazon"><input className={input} name="amazonUrl" type="url" defaultValue={book.amazonUrl ?? ""} placeholder="https://…"/></Field></div>}{pricing === "FREE" && <div className="mt-4 rounded-2xl border border-dashed border-emerald-400/50 bg-white/70 p-4 dark:bg-slate-950/30"><div className="flex flex-wrap items-center justify-between gap-2"><div><strong className="text-slate-950 dark:text-white">PDF gratuit</strong><p className="text-sm text-slate-500 dark:text-slate-400">{row.pdf ? row.pdf.originalName : "Aucun PDF actuellement"}</p></div>{row.pdf && <a href={`/media/${row.pdf.path}`} target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-2 text-sm font-bold dark:border-white/15">Consulter</a>}</div><input className="mt-3 block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:font-bold file:text-white" name="pdf" type="file" accept="application/pdf"/><input type="hidden" name="amazonUrl" value=""/></div>}</section>
+      <section className="mt-7 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 dark:border-emerald-400/25 dark:bg-emerald-400/[.07]"><h2 className="font-black text-slate-950 dark:text-white">Tarification et destination</h2><div className="mt-4 flex flex-wrap gap-3">{(["FREE", "PAID"] as const).map(value => <label key={value} className={`cursor-pointer rounded-xl border px-5 py-3 font-bold transition ${pricing === value ? "border-emerald-600 bg-white text-emerald-700 shadow-sm dark:border-emerald-400 dark:bg-emerald-400/15 dark:text-emerald-300" : "bg-white text-slate-500 dark:border-white/10 dark:bg-white/[.045] dark:text-slate-300"}`}><input className="mr-2 accent-emerald-700" type="radio" checked={pricing === value} onChange={() => setPricing(value)}/>{value === "FREE" ? "Gratuit" : "Payant"}</label>)}</div>{pricing === "PAID" && <div className="mt-4 grid items-end gap-4 md:grid-cols-2"><Field label="Prix indicatif Amazon (€)"><input className={input} name="price" type="number" min="0.01" step="0.01" defaultValue={book.priceCents ? (book.priceCents / 100).toFixed(2) : ""}/></Field><Field label="Lien Amazon"><input className={input} name="amazonUrl" type="url" defaultValue={book.amazonUrl ?? ""} placeholder="https://…"/></Field></div>}{<div className="mt-4 rounded-2xl border border-dashed border-emerald-400/50 bg-white/70 p-4 dark:bg-slate-950/30"><div className="flex flex-wrap items-center justify-between gap-2"><div><strong className="text-slate-950 dark:text-white">PDF associé au livre</strong><p className="text-sm text-slate-500 dark:text-slate-400">{row.pdf ? row.pdf.originalName : "Aucun PDF actuellement"}</p></div>{row.pdf && <a href={`/media/${row.pdf.path}`} target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-2 text-sm font-bold dark:border-white/15">Consulter</a>}</div><input className="mt-3 block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:font-bold file:text-white" name="pdf" type="file" accept="application/pdf"/>{pricing === "FREE" && <input type="hidden" name="amazonUrl" value=""/>}</div>}</section>
 
+      <div className="mt-5"><PdfAccessSettings value={accessLevel} onChange={setAccessLevel}/></div>
       <div className="mt-7 rounded-2xl bg-slate-50 p-5 dark:bg-white/[.045]"><label className="flex items-center gap-3 font-bold text-slate-800 dark:text-slate-100"><input className="size-5 accent-emerald-700" type="checkbox" name="published" defaultChecked={book.published}/>Publié sur le site</label></div>
       {message && <p role="status" className={`mt-6 flex items-center gap-2 rounded-xl p-4 font-bold ${message.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{message.ok && <CheckCircle2 size={19}/>} {message.text}</p>}
       <div className="mt-7 flex flex-wrap justify-end gap-3"><Link href="/admin/livres" className="inline-flex min-h-12 items-center justify-center rounded-xl border px-6 font-bold text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[.06]">Annuler</Link><button disabled={saving} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-7 font-black text-white shadow-lg transition hover:bg-emerald-800 disabled:opacity-60 dark:bg-emerald-700 dark:hover:bg-emerald-600">{saving ? <LoaderCircle className="animate-spin" size={19}/> : <Save size={19}/>} {saving ? "Enregistrement…" : "Enregistrer les modifications"}</button></div>

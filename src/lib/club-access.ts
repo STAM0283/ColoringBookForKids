@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, eq, gt, ne } from "drizzle-orm";
+import { and, eq, gt, ne, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { clubCodes, clubSessions } from "@/db/schema";
@@ -30,13 +30,15 @@ export function clubCodeHint(code: string) {
   return `${normalized.slice(0, 6)}••••${normalized.slice(-4)}`;
 }
 
-export async function getClubSession() {
-  const token = (await cookies()).get(CLUB_COOKIE)?.value;
+export function buyerCookie(bookId: string) { return `petits-crayons-book-${bookId}`; }
+
+export async function getClubSession(bookId?: string) {
+  const token = (await cookies()).get(bookId ? buyerCookie(bookId) : CLUB_COOKIE)?.value;
   if (!token) return null;
   const now = new Date();
   const [session] = await db.select({ id: clubSessions.id }).from(clubSessions)
     .innerJoin(clubCodes, eq(clubSessions.accessCodeId, clubCodes.id))
-    .where(and(eq(clubSessions.tokenHash, hashClubValue(token)), gt(clubSessions.expiresAt, now), ne(clubCodes.status, "DISABLED"))).limit(1);
+    .where(and(eq(clubSessions.tokenHash, hashClubValue(token)), bookId ? eq(clubCodes.bookId, bookId) : isNull(clubCodes.bookId), gt(clubSessions.expiresAt, now), ne(clubCodes.status, "DISABLED"))).limit(1);
   if (!session) return null;
   await db.update(clubSessions).set({ lastUsedAt: now }).where(eq(clubSessions.id, session.id));
   return session;

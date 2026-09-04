@@ -1,14 +1,16 @@
 import sharp from "sharp";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { books, media } from "@/db/schema";
+import { activityTypes, books, media } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 
 const updateSchema = z.object({
+  accessLevel: z.enum(["PUBLIC", "CLUB", "BUYER"]).default("PUBLIC"),
   language: z.enum(["FR","EN"]),
   title: z.string().trim().min(2).max(150), shortDescription: z.string().trim().min(10).max(300), description: z.string().trim().min(10),
+  activityTypeId: z.string().uuid().nullable(),
   categoryId: z.string().uuid().nullable(), ageMin: z.number().int().min(0).max(18), ageMax: z.number().int().min(0).max(18),
   pageCount: z.number().int().min(1).max(1000), amazonUrl: z.union([z.literal(""), z.string().url()]), pricingType: z.enum(["FREE", "PAID"]),
   priceCents: z.number().int().min(1).nullable(), published: z.boolean(), featured: z.boolean(),
@@ -23,18 +25,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const isMultipart = request.headers.get("content-type")?.includes("multipart/form-data");
   const form = isMultipart ? await request.formData() : null;
   const body = form ? {
-    language: form.get("language") === "EN" ? "EN" : "FR", title: form.get("title"), shortDescription: form.get("shortDescription"), description: form.get("description"),
+    accessLevel: form.has("accessLevel") ? form.get("accessLevel") : current.accessLevel, language: form.get("language") === "EN" ? "EN" : "FR", title: form.get("title"), shortDescription: form.get("shortDescription"), description: form.get("description"),
+    activityTypeId: form.has("activityTypeId") ? form.get("activityTypeId") || null : current.activityTypeId,
     categoryId: form.get("categoryId") || null, ageMin: Number(form.get("ageMin")), ageMax: Number(form.get("ageMax")),
     pageCount: Number(form.get("pageCount")), amazonUrl: form.get("amazonUrl") || "", pricingType: form.get("pricingType"),
     priceCents: form.get("pricingType") === "FREE" || !form.get("price") ? null : Math.round(Number(form.get("price")) * 100),
     published: form.get("published") === "true", featured: current.featured,
   } : await request.json();
-  const parsed = updateSchema.safeParse({ ...body, language:body.language??current.language, featured: body.featured ?? current.featured });
+  const parsed = updateSchema.safeParse({ ...body, accessLevel: body.accessLevel ?? current.accessLevel, activityTypeId: body.activityTypeId === undefined ? current.activityTypeId : body.activityTypeId, language:body.language??current.language, featured: body.featured ?? current.featured });
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message }, { status: 400 });
   const value = parsed.data, hasNewPrice = value.pricingType === "PAID" && value.priceCents && (value.priceCents !== current.priceCents || current.pricingType !== "PAID");
   let newCover: { id: string; path: string } | null = null;
   let newPdf: { id: string; path: string } | null = null;
   try {
+    if (value.activityTypeId) {
+      const type = await db.query.activityTypes.findFirst({ where: and(eq(activityTypes.id, value.activityTypeId), eq(activityTypes.language, value.language)) });
+      if (!type) return Response.json({ message: "Choisissez un type d’activité existant dans la langue du livre." }, { status: 400 });
+    }
     const cover = form?.get("cover");
     if (cover instanceof File && cover.size > 0) {
       await storageService.validateFile(cover, "IMAGE");
@@ -45,12 +52,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     const pdf = form?.get("pdf");
     if (pdf instanceof File && pdf.size > 0) {
-      if (value.pricingType !== "FREE") throw new Error("Un PDF peut uniquement être associé à un livre gratuit.");
+
       const stored = await storageService.uploadFile(pdf, "PDF");
       newPdf = { id: crypto.randomUUID(), path: stored.path };
       await db.insert(media).values({ ...newPdf, type: "PDF", filename: stored.filename, originalName: pdf.name, mimeType: stored.mimeType, size: stored.size });
     }
-    const shouldRemovePdf = value.pricingType === "PAID" || form?.get("removePdf") === "true";
+    const shouldRemovePdf = form?.get("removePdf") === "true";
     await db.update(books).set({ ...value, coverMediaId: newCover?.id ?? current.coverMediaId, pdfMediaId: shouldRemovePdf ? null : (newPdf?.id ?? current.pdfMediaId), amazonUrl: value.amazonUrl || null, priceCents: value.pricingType === "PAID" ? value.priceCents : null, priceUpdatedAt: value.pricingType === "FREE" ? null : hasNewPrice ? new Date() : current.priceUpdatedAt, publishedAt: value.published ? (current.publishedAt ?? new Date()) : null, updatedAt: new Date() }).where(eq(books.id, id));
     if (newCover && current.coverMediaId) {
       const oldCover = await db.query.media.findFirst({ where: eq(media.id, current.coverMediaId) });

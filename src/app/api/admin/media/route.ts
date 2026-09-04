@@ -2,7 +2,7 @@ import sharp from "sharp";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { media, mediaCategories, mediaCharacters } from "@/db/schema";
+import { characters, media, mediaCategories, mediaCharacters } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 
 export const runtime = "nodejs";
@@ -33,11 +33,10 @@ export async function POST(request: Request) {
     const accessLevel=String(form.get("accessLevel")||"")==="CLUB"?"CLUB" as const:"PUBLIC" as const;
     const creativeIdea=String(form.get("creativeIdea")||"").trim();
     if(creativeIdea.length>2000)return Response.json({message:"La description ne peut pas dépasser 2 000 caractères."},{status:400});
-    await db.insert(media).values({id,type,filename:stored.filename,originalName:file.name,mimeType:stored.mimeType,size:stored.size,width,height,path:stored.path,alt:String(form.get("alt")||"").trim()||null,creativeIdea:creativeIdea||null,language,galleryEnabled:true,published,accessLevel});
     const categoryId=String(form.get("categoryId")||"").trim();
-    if(categoryId)await db.insert(mediaCategories).values({mediaId:id,categoryId});
-    const characterIds=String(form.get("characterIds")||"").split(",").filter(Boolean);
-    if(characterIds.length)await db.insert(mediaCharacters).values(characterIds.map(characterId=>({mediaId:id,characterId})));
+    const characterIds=[...new Set(String(form.get("characterIds")||"").split(",").filter(Boolean))];
+    if(characterIds.length){const valid=await db.select({id:characters.id}).from(characters).where(and(inArray(characters.id,characterIds),eq(characters.language,language)));if(valid.length!==characterIds.length){await storageService.deleteFile(stored.path).catch(()=>undefined);return Response.json({message:"Un personnage sélectionné est invalide pour cette langue."},{status:400})}}
+    await db.transaction(async tx=>{await tx.insert(media).values({id,type,filename:stored.filename,originalName:file.name,mimeType:stored.mimeType,size:stored.size,width,height,path:stored.path,alt:String(form.get("alt")||"").trim()||null,creativeIdea:creativeIdea||null,language,galleryEnabled:true,published,accessLevel});if(categoryId)await tx.insert(mediaCategories).values({mediaId:id,categoryId});if(characterIds.length)await tx.insert(mediaCharacters).values(characterIds.map(characterId=>({mediaId:id,characterId})))});
     return Response.json({ id, ...stored, type, width, height }, { status: 201 });
   } catch(error){return Response.json({message:error instanceof Error?error.message:"Import impossible."},{status:400})}
 }

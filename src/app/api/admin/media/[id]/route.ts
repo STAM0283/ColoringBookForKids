@@ -1,8 +1,8 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { activities, bookGallery, books, media, mediaCategories, mediaCharacters, posts, vlogs } from "@/db/schema";
+import { activities, bookGallery, books, characters, media, mediaCategories, mediaCharacters, posts, vlogs } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 
 export const runtime = "nodejs";
@@ -13,14 +13,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const parsed = z.object({ alt: z.string().max(300), creativeIdea:z.string().max(2000).optional(), categoryId: z.string().nullable().optional(), characterIds:z.array(z.string().uuid()).optional(), published: z.boolean(), accessLevel: z.enum(["PUBLIC", "CLUB"]) }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ message: "Paramètres de l’image invalides." }, { status: 400 });
   const { id } = await params;
-  const [item] = await db.select({ id: media.id }).from(media).where(and(eq(media.id, id), eq(media.galleryEnabled, true))).limit(1);
+  const [item] = await db.select({ id: media.id, language:media.language }).from(media).where(and(eq(media.id, id), eq(media.galleryEnabled, true))).limit(1);
   if (!item) return Response.json({ message: "Image de galerie introuvable." }, { status: 404 });
-  await db.update(media).set({ alt: parsed.data.alt.trim() || null, creativeIdea:parsed.data.creativeIdea===undefined?undefined:parsed.data.creativeIdea.trim()||null, published: parsed.data.published, accessLevel: parsed.data.accessLevel, updatedAt: new Date() }).where(eq(media.id, id));
-  if (parsed.data.categoryId !== undefined) {
-    await db.delete(mediaCategories).where(eq(mediaCategories.mediaId, id));
-    if (parsed.data.categoryId) await db.insert(mediaCategories).values({ mediaId: id, categoryId: parsed.data.categoryId });
-  }
-  if(parsed.data.characterIds!==undefined){await db.delete(mediaCharacters).where(eq(mediaCharacters.mediaId,id));if(parsed.data.characterIds.length)await db.insert(mediaCharacters).values(parsed.data.characterIds.map(characterId=>({mediaId:id,characterId})))}
+  if(parsed.data.characterIds?.length){const ids=[...new Set(parsed.data.characterIds)],valid=await db.select({id:characters.id}).from(characters).where(and(inArray(characters.id,ids),eq(characters.language,item.language)));if(valid.length!==ids.length)return Response.json({message:"Un personnage sélectionné est invalide pour cette langue."},{status:400})}
+  await db.transaction(async tx=>{await tx.update(media).set({ alt: parsed.data.alt.trim() || null, creativeIdea:parsed.data.creativeIdea===undefined?undefined:parsed.data.creativeIdea.trim()||null, published: parsed.data.published, accessLevel: parsed.data.accessLevel, updatedAt: new Date() }).where(eq(media.id, id));if(parsed.data.categoryId!==undefined){await tx.delete(mediaCategories).where(eq(mediaCategories.mediaId,id));if(parsed.data.categoryId)await tx.insert(mediaCategories).values({mediaId:id,categoryId:parsed.data.categoryId})}if(parsed.data.characterIds!==undefined){await tx.delete(mediaCharacters).where(eq(mediaCharacters.mediaId,id));if(parsed.data.characterIds.length)await tx.insert(mediaCharacters).values([...new Set(parsed.data.characterIds)].map(characterId=>({mediaId:id,characterId})))}})
   return Response.json({ message: "Image modifiée." });
 }
 

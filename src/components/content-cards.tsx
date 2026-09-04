@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { PdfAccessGate } from "@/components/public/pdf-access-gate";
 import Image from "next/image";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Clock3, Play } from "lucide-react";
 import { Badge, Card } from "./ui";
 import { BookImageCarousel } from "./public/book-image-carousel";
 import { ClubDownloadButton } from "./public/club-download-button";
 import { ActivityImageCarousel } from "./public/activity-image-carousel";
 import { ActivityDescriptionToggle } from "./public/activity-description-toggle";
 import { localizedPath, type Locale } from "@/lib/i18n";
+import { readingTimeLabel } from "@/lib/reading-time";
 
 const colors = ["bg-[#d9eadf]", "bg-[#f6dfce]", "bg-[#dce4f3]", "bg-[#f1dce4]"];
 
@@ -29,11 +30,11 @@ export function ActivityCard({ item, index = 0, clubUnlocked = false,locale="fr"
   return <Card className="group flex self-start flex-col overflow-hidden dark:border-white/10"><div className={`relative aspect-[4/3] ${colors[(index + 1) % 4]} grid place-items-center overflow-hidden`}>{gallery.length?<ActivityImageCarousel activityId={item.id} images={gallery} title={item.title} locale={locale}/>:<span className="text-7xl transition group-hover:scale-110">{["✏️", "🧩", "🔎", "🦁"][index % 4]}</span>}</div><div className="flex flex-col p-5"><div className="flex flex-wrap gap-2">{item.activityType&&<span className="rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide" style={{backgroundColor:`${item.activityType.color}20`,color:item.activityType.color}}>{item.activityType.badge} {item.activityType.name}</span>}{item.categories?.map(category=><span key={`${category.name}-${category.badge}`} title={category.name} className="inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide" style={{backgroundColor:`${category.color}20`,color:category.color}}><span aria-hidden="true">{category.badge}</span><span className="truncate">{category.name}</span></span>)}<Badge>{item.accessLevel==="PUBLIC"?(en?"Free":"Gratuit"):"PDF"} · {item.pageCount ?? 1} pages</Badge>{item.accessLevel === "CLUB" && <Badge>Instagram Club</Badge>}{item.accessLevel === "BUYER" && <Badge>{en?"Book purchase bonus":"Bonus acheteur"}</Badge>}</div><ActivityDescriptionToggle activityId={item.id} title={item.title} description={item.description} modelPath={gallery[0]?.modelPath} fallbackModelPath={pages.find(page=>page.modelPath)?.modelPath} locale={locale}/><div>{pages[0]&&<PdfAccessGate accessLevel={item.accessLevel} bookId={item.accessBookId} en={en}><ClubDownloadButton locale={locale} activityId={item.id} title={item.title} coloringPages={pages.map(page=>({path:page.path,modelPath:page.modelPath}))} coloringEnabled={coloringEnabled} clubOnly={false} unlocked={clubUnlocked} enabled={item.downloadEnabled} hasModel={hasModel}/></PdfAccessGate>}</div></div></Card>;
 }
 
-export function PostCard({ item, coverPath,locale="fr" }: { item: { title: string; slug: string; excerpt: string }; coverPath?: string | null;locale?:Locale }) {
+export function PostCard({ item, coverPath,locale="fr" }: { item: { title: string; slug: string; excerpt: string; content: string }; coverPath?: string | null;locale?:Locale }) {
   const en=locale==="en";
   return <Card className="group flex h-full flex-col overflow-hidden dark:border-white/10">
     {coverPath && <div className="relative aspect-[16/9] overflow-hidden bg-secondary/30"><Image src={`/media/${coverPath}`} alt={`${en?"Illustration for":"Illustration de"} ${item.title}`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-[1.03]"/></div>}
-    <div className="flex flex-1 flex-col p-6"><Badge>Inspiration</Badge><h3 className="mt-4 text-balance font-display text-2xl font-bold leading-tight">{item.title}</h3><p className="mt-3 line-clamp-3 leading-relaxed text-foreground/60">{item.excerpt}</p><Link className="mt-auto inline-flex items-center gap-2 pt-6 font-bold text-primary" href={`${localizedPath("blog",locale)}/${item.slug}`}>{en?"Read article":"Lire l’article"} <ArrowRight size={17}/></Link></div>
+    <div className="flex flex-1 flex-col p-6"><div className="flex flex-wrap items-center gap-2"><Badge>Inspiration</Badge><span className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground/55"><Clock3 size={14}/>{readingTimeLabel(item.content,locale)}</span></div><h3 className="mt-4 text-balance font-display text-2xl font-bold leading-tight">{item.title}</h3><p className="mt-3 line-clamp-3 leading-relaxed text-foreground/60">{item.excerpt}</p><Link className="mt-auto inline-flex items-center gap-2 pt-6 font-bold text-primary" href={`${localizedPath("blog",locale)}/${item.slug}`}>{en?"Read article":"Lire l’article"} <ArrowRight size={17}/></Link></div>
   </Card>;
 }
 

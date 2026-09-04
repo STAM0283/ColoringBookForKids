@@ -67,14 +67,6 @@
   .rich-article blockquote { padding-left: .9em; }
 }
 .dark .rich-article { color: rgb(226 232 240); }
-.character-profile-tab { animation: character-tab-enter 180ms ease-out; }
-@keyframes character-tab-enter {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .character-profile-tab { animation: none; }
-}
 .dark .rich-article h2, .dark .rich-article h3, .dark .rich-article strong { color: hsl(var(--foreground)); }
 .dark [class~="text-foreground/60"] { color: hsl(var(--foreground) / .72); }
 .dark [class~="text-foreground/55"] { color: hsl(var(--foreground) / .66); }

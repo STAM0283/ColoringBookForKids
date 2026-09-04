@@ -27,7 +27,12 @@ export const mediaRepository = {
       .where(and(eq(categories.scope,"ACTIVITY"),eq(categories.language,language)))
       .orderBy(asc(categories.sortOrder), asc(categories.name));
   },
-  async characterOptions(language:"FR"|"EN"="FR") { return db.select({name:characters.name,slug:characters.slug,color:characters.color}).from(characters).where(and(eq(characters.language,language),eq(characters.published,true))).orderBy(asc(characters.sortOrder),asc(characters.name)); },
+  async characterOptions(language:"FR"|"EN"="FR") {
+    return db.select({name:characters.name,slug:characters.slug,color:characters.color,shortDescription:characters.shortDescription,biography:characters.biography,ageLabel:characters.ageLabel,species:characters.species,personality:characters.personality,hobbies:characters.hobbies,motto:characters.motto,portraitPath:media.path})
+      .from(characters).leftJoin(media,eq(characters.portraitMediaId,media.id))
+      .where(and(eq(characters.language,language),eq(characters.published,true)))
+      .orderBy(asc(characters.sortOrder),asc(characters.name));
+  },
   async paginatedPublishedVideos(options:{page?:number;pageSize?:number;search?:string;category?:string;sort?:"newest"|"oldest";language?:"FR"|"EN"}={}) {
     const page = Math.max(1, options.page??1), pageSize = Math.min(48, Math.max(1, options.pageSize??9));
     const video = alias(media, "published_video");

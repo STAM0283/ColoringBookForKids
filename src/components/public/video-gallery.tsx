@@ -34,7 +34,7 @@ export function VideoGallery({ items }: {
       {items.map(item => {
             const open = expanded === item.id;
             return <article key={item.id} className="group overflow-hidden rounded-[1.5rem] border bg-card shadow-[0_18px_50px_-32px_rgba(15,23,42,.55)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl">
-          <button onClick={() => setSelected(item)} className="relative block aspect-video w-full overflow-hidden bg-slate-900 text-white" aria-label={`${en ? "Watch" : "Regarder"} ${item.title}`}>
+          <button onClick={() => setSelected(item)} className="relative block aspect-square w-full overflow-hidden bg-slate-900 text-white" aria-label={`${en ? "Watch" : "Regarder"} ${item.title}`}>
             <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_50%_30%,#2f6657,#101827_72%)]"><Film size={58} className="opacity-30"/></div>
             {item.thumbnailPath && <>
               <Image aria-hidden="true" src={`/media/${item.thumbnailPath}`} alt="" fill quality={70} sizes="(max-width:640px) calc(100vw - 2rem),(max-width:1024px) 50vw,600px" className="scale-110 object-cover opacity-35 blur-xl"/>

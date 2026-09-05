@@ -33,11 +33,11 @@ export const mediaRepository = {
       .where(and(eq(characters.language,language),eq(characters.published,true)))
       .orderBy(asc(characters.sortOrder),asc(characters.name));
   },
-  async paginatedPublishedVideos(options:{page?:number;pageSize?:number;search?:string;category?:string;sort?:"newest"|"oldest";language?:"FR"|"EN"}={}) {
-    const page = Math.max(1, options.page??1), pageSize = Math.min(48, Math.max(1, options.pageSize??9));
+  async paginatedPublishedVideos(options:{page?:number;pageSize?:number;search?:string;category?:string;character?:string;sort?:"newest"|"oldest";language?:"FR"|"EN"}={}) {
+    const page = Math.max(1, options.page??1), pageSize = Math.min(48, Math.max(1, options.pageSize??9)),language=options.language??"FR";
     const video = alias(media, "published_video");
     const thumbnail = alias(media, "published_video_thumbnail");
-    const where=and(eq(vlogs.published,true),eq(vlogs.language,options.language??"FR"),options.search?or(ilike(vlogs.title,`%${options.search}%`),ilike(vlogs.description,`%${options.search}%`)):undefined,options.category?eq(categories.slug,options.category):undefined),dateOrder=options.sort==="oldest"?asc(vlogs.publishedAt):desc(vlogs.publishedAt);
+    const where=and(eq(vlogs.published,true),eq(vlogs.language,language),options.search?or(ilike(vlogs.title,`%${options.search}%`),ilike(vlogs.description,`%${options.search}%`)):undefined,options.category?eq(categories.slug,options.category):undefined,options.character?sql`exists (select 1 from ${mediaCharacters} video_mc join ${characters} video_c on video_c.id = video_mc.character_id where video_mc.media_id = ${vlogs.videoMediaId} and video_c.slug = ${options.character} and video_c.language = ${language} and video_c.published = true)`:undefined),dateOrder=options.sort==="oldest"?asc(vlogs.publishedAt):desc(vlogs.publishedAt);
     const [items, [{ count }]] = await Promise.all([
       db.select({ vlog: vlogs, video, thumbnail }).from(vlogs).leftJoin(video, eq(vlogs.videoMediaId, video.id)).leftJoin(thumbnail, eq(vlogs.thumbnailMediaId, thumbnail.id)).leftJoin(categories,eq(vlogs.categoryId,categories.id)).where(where).orderBy(desc(vlogs.featured), dateOrder).limit(pageSize).offset((page - 1) * pageSize),
       db.select({ count: sql<number>`count(*)` }).from(vlogs).leftJoin(categories,eq(vlogs.categoryId,categories.id)).where(where),
@@ -46,6 +46,12 @@ export const mediaRepository = {
   },
   async videoCategoryOptions(language:"FR"|"EN"="FR") {
     return db.select({ name: categories.name, slug: categories.slug }).from(categories).where(and(eq(categories.scope,"ACTIVITY"),eq(categories.language,language))).orderBy(asc(categories.sortOrder),asc(categories.name));
+  },
+  async videoCharacterOptions(language:"FR"|"EN"="FR") {
+    return db.select({name:characters.name,slug:characters.slug,color:characters.color,shortDescription:characters.shortDescription,biography:characters.biography,ageLabel:characters.ageLabel,species:characters.species,personality:characters.personality,hobbies:characters.hobbies,motto:characters.motto,portraitPath:media.path})
+      .from(characters).leftJoin(media,eq(characters.portraitMediaId,media.id))
+      .where(and(eq(characters.language,language),eq(characters.published,true),sql`exists (select 1 from ${mediaCharacters} option_mc join ${vlogs} option_vlog on option_vlog.video_media_id = option_mc.media_id where option_mc.character_id = ${characters.id} and option_vlog.published = true and option_vlog.language = ${language})`))
+      .orderBy(asc(characters.sortOrder),asc(characters.name));
   },
   async listImages(limit = 60) {
     return db.select().from(media).where(and(eq(media.type,"IMAGE"),eq(media.galleryEnabled,true),eq(media.published,true),eq(media.accessLevel,"PUBLIC"))).orderBy(desc(media.createdAt)).limit(limit);

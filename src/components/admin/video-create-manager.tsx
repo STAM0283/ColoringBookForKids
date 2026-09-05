@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { CheckCircle2, Clock3, Film, ImageIcon, LoaderCircle, Plus, Sparkles, Tags, UploadCloud, X } from "lucide-react";
+import { CheckCircle2, Clock3, Film, ImageIcon, LoaderCircle, Plus, Sparkles, Tags, UploadCloud, Users, X } from "lucide-react";
 import { Children, isValidElement, useEffect, useRef, useState } from "react";
 import { AdminSelect } from "./admin-select";
 import { AdminFormField } from "./admin-form-field";
@@ -25,12 +25,14 @@ function CreateVideoDialog({ close }: { close: () => void }) {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null), [thumbnailUrl, setThumbnailUrl] = useState("");
   const [duration, setDuration] = useState(0), [published, setPublished] = useState(true), [featured, setFeatured] = useState(false);
   const [description,setDescription]=useState("");
+  const [language,setLanguage]=useState<"FR"|"EN">("FR"),[characters,setCharacters]=useState<Array<{id:string;name:string;language:"FR"|"EN";color:string}>>([]),[characterIds,setCharacterIds]=useState<string[]>([]);
   const [categories,setCategories]=useState<Array<{id:string;name:string}>>([]),[categoryId,setCategoryId]=useState("");
   const [loading, setLoading] = useState(false), [error, setError] = useState("");
 
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
   useEffect(() => () => { if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl); }, [thumbnailUrl]);
   useEffect(()=>{fetch("/api/admin/activity-categories").then(response=>response.ok?response.json():{items:[]}).then((data:{items:Array<{id:string;name:string}>})=>setCategories(data.items)).catch(()=>setCategories([]))},[]);
+  useEffect(()=>{fetch("/api/admin/characters").then(response=>response.ok?response.json():{items:[]}).then((data:{items:Array<{character:{id:string;name:string;language:"FR"|"EN";color:string}}>})=>setCharacters(data.items.map(item=>item.character))).catch(()=>setCharacters([]))},[]);
   function selectVideo(file?: File) {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     setVideoFile(file ?? null);
@@ -56,7 +58,7 @@ function CreateVideoDialog({ close }: { close: () => void }) {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!videoFile) return setError("Sélectionnez une vidéo MP4.");
     setLoading(true); setError("");
-    const form = new FormData(event.currentTarget); form.set("duration", String(duration)); form.set("categoryId",categoryId); form.set("published", published ? "on" : ""); form.set("featured", featured ? "on" : ""); form.set("video", videoFile); if (thumbnailFile) form.set("thumbnail", thumbnailFile);
+    const form = new FormData(event.currentTarget); form.set("language",language);form.set("duration", String(duration)); form.set("categoryId",categoryId);form.set("characterIds",characterIds.join(",")); form.set("published", published ? "on" : ""); form.set("featured", featured ? "on" : ""); form.set("video", videoFile); if (thumbnailFile) form.set("thumbnail", thumbnailFile);
     const response = await fetch("/api/admin/vlogs", { method: "POST", body: form });
     const data = await response.json().catch(() => null) as { message?: string } | null;
     setLoading(false);
@@ -70,10 +72,11 @@ function CreateVideoDialog({ close }: { close: () => void }) {
 
       <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[1fr_.95fr]">
         <div className="space-y-5">
-          <Field label="Langue"><select name="language" defaultValue="FR" className={input}><option value="FR">🇫🇷 Français</option><option value="EN">🇬🇧 Anglais</option></select></Field>
+          <Field label="Langue"><select name="language" value={language} onChange={event=>{const next=event.target.value as "FR"|"EN";setLanguage(next);setCharacterIds([])}} className={input}><option value="FR">🇫🇷 Français</option><option value="EN">🇬🇧 Anglais</option></select></Field>
           <Field label="Titre"><input name="title" required minLength={2} maxLength={150} autoFocus placeholder="Ex. Dessinons un petit renard" className={input}/></Field>
           <MarkdownEditor name="description" label="Description" value={description} onChange={setDescription} maximumLength={2000} compact help="Structurez la présentation avec du gras, des listes ou des sous-titres."/>
           <AdminSelect label="Catégorie" icon={<Tags size={18}/>} value={categoryId} options={[{value:"",label:"Sans catégorie"},...categories.map(category=>({value:category.id,label:category.name}))]} onChange={setCategoryId}/>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[.045]"><p className="flex items-center gap-2 text-sm font-black text-slate-800 dark:text-slate-100"><Users size={17} className="text-emerald-600 dark:text-emerald-300"/>Personnages présents <span className="font-semibold text-slate-400">(facultatif)</span></p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Ils permettront aux visiteurs de retrouver cette vidéo depuis leur fiche.</p><div className="mt-3 flex flex-wrap gap-2">{characters.filter(character=>character.language===language).map(character=>{const selected=characterIds.includes(character.id);return <button type="button" key={character.id} onClick={()=>setCharacterIds(selected?characterIds.filter(id=>id!==character.id):[...characterIds,character.id])} className={`rounded-full border px-3 py-2 text-xs font-black transition hover:-translate-y-0.5 ${selected?"text-white shadow-md":"border-slate-200 bg-white text-slate-600 hover:border-emerald-300 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"}`} style={selected?{backgroundColor:character.color,borderColor:character.color}:undefined}>{selected&&<CheckCircle2 size={13} className="mr-1 inline"/>}{character.name}</button>})}{!characters.some(character=>character.language===language)&&<span className="text-xs font-semibold text-slate-400">Aucun personnage disponible dans cette langue.</span>}</div></div>
           <div className="grid gap-4 sm:grid-cols-2"><div className="rounded-2xl border bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[.045]"><p className="flex items-center gap-2 text-sm font-black text-slate-800 dark:text-slate-100"><Clock3 size={16} className="text-emerald-700 dark:text-emerald-300"/>Durée détectée</p><p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{duration ? formatDuration(duration) : "—"}</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Calculée automatiquement depuis le MP4.</p></div><label className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition dark:border-white/10 ${published ? "border-emerald-200 bg-emerald-50 dark:border-emerald-400/40 dark:bg-emerald-400/10" : "bg-slate-50 dark:bg-white/[.045]"}`}><span><span className="block text-sm font-black text-slate-900 dark:text-slate-100">Publier sur le site</span><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{published ? "Visible immédiatement" : "Conserver en brouillon"}</span></span><Switch checked={published}/><input className="sr-only" type="checkbox" checked={published} onChange={event => setPublished(event.target.checked)}/></label></div>
           <label className="flex cursor-pointer items-center gap-3 rounded-2xl border bg-slate-50 p-4 transition hover:border-emerald-300 dark:border-white/10 dark:bg-white/[.045] dark:hover:border-emerald-400/40"><input type="checkbox" checked={featured} onChange={event => setFeatured(event.target.checked)} className="size-5 accent-emerald-700"/><span><span className="block text-sm font-black text-slate-900 dark:text-slate-100">Mettre cette vidéo en avant</span><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Elle apparaîtra prioritairement dans les listes.</span></span></label>
           {error && <p role="alert" className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700 dark:bg-red-400/10 dark:text-red-300">{error}</p>}

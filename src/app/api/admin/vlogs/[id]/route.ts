@@ -1,9 +1,9 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import sharp from "sharp";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { media, vlogs } from "@/db/schema";
+import { characters, media, mediaCharacters, vlogs } from "@/db/schema";
 import { storageService } from "@/lib/storage/local-storage";
 
 export const runtime = "nodejs";
@@ -18,6 +18,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const current = await db.query.vlogs.findFirst({ where: eq(vlogs.id, id) });
   if (!current) return Response.json({ message: "Vidéo introuvable." }, { status: 404 });
+  const characterIds=[...new Set(String(form.get("characterIds")||"").split(",").filter(Boolean))],language=parsed.data.language??current.language;
+  if(characterIds.length){const valid=await db.select({id:characters.id}).from(characters).where(and(inArray(characters.id,characterIds),eq(characters.language,language)));if(valid.length!==characterIds.length)return Response.json({message:"Un personnage sélectionné est invalide ou dans une autre langue."},{status:400})}
 
   const thumbnail = form.get("thumbnail");
   let createdMedia: typeof media.$inferSelect | null = null;
@@ -32,7 +34,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       thumbnailMediaId = createdMedia.id;
     }
 
-    await db.update(vlogs).set({ ...parsed.data, thumbnailMediaId, publishedAt: parsed.data.published ? (current.publishedAt ?? new Date()) : null, updatedAt: new Date() }).where(eq(vlogs.id, id));
+    await db.transaction(async tx=>{await tx.update(vlogs).set({ ...parsed.data, thumbnailMediaId, publishedAt: parsed.data.published ? (current.publishedAt ?? new Date()) : null, updatedAt: new Date() }).where(eq(vlogs.id, id));if(current.videoMediaId){await tx.delete(mediaCharacters).where(eq(mediaCharacters.mediaId,current.videoMediaId));if(characterIds.length)await tx.insert(mediaCharacters).values(characterIds.map(characterId=>({mediaId:current.videoMediaId!,characterId})))}});
 
     if (createdMedia && current.thumbnailMediaId) {
       const previous = await db.query.media.findFirst({ where: eq(media.id, current.thumbnailMediaId) });

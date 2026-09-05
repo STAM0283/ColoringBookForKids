@@ -2,7 +2,7 @@
 import { PdfAccessSettings, type AccessLevel } from "./pdf-access-settings";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, CheckCircle2, FileImage, Languages, LoaderCircle, Trash2, UploadCloud, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, FileImage, Languages, LoaderCircle, Trash2, UploadCloud } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActivityCategorySelector } from "./activity-category-selector";
 import { MarkdownEditor } from "./markdown-editor";

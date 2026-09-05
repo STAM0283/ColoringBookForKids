@@ -45,7 +45,14 @@ export const mediaRepository = {
     const total = Number(count); return { items, page, pageSize, total, pages: Math.ceil(total / pageSize) };
   },
   async videoCategoryOptions(language:"FR"|"EN"="FR") {
-    return db.select({ name: categories.name, slug: categories.slug }).from(categories).where(and(eq(categories.scope,"ACTIVITY"),eq(categories.language,language))).orderBy(asc(categories.sortOrder),asc(categories.name));
+    return db.select({ name: categories.name, slug: categories.slug })
+      .from(categories)
+      .where(and(
+        eq(categories.scope,"ACTIVITY"),
+        eq(categories.language,language),
+        sql`exists (select 1 from ${vlogs} category_video where category_video.category_id = ${categories.id} and category_video.published = true and category_video.language = ${language})`,
+      ))
+      .orderBy(asc(categories.sortOrder),asc(categories.name));
   },
   async videoCharacterOptions(language:"FR"|"EN"="FR") {
     return db.select({name:characters.name,slug:characters.slug,color:characters.color,shortDescription:characters.shortDescription,biography:characters.biography,ageLabel:characters.ageLabel,species:characters.species,personality:characters.personality,hobbies:characters.hobbies,motto:characters.motto,portraitPath:media.path})

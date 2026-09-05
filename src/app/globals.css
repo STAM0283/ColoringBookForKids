@@ -398,10 +398,17 @@ main input[type="file"]:focus-visible {
 .video-create-dialog > footer,
 .asset-video-edit-dialog > header,
 .asset-video-edit-dialog > footer { flex-shrink: 0; }
-.asset-modal:has(.asset-video-edit-dialog) { overflow: hidden; }
+.asset-modal:has(.asset-video-edit-dialog) {
+  display: flex;
+  height: min(48rem, calc(100dvh - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: hidden;
+}
 .asset-video-edit-dialog {
   display: flex;
-  max-height: calc(100dvh - 2rem);
+  height: 100%;
+  max-height: 100%;
+  width: 100%;
   flex-direction: column;
 }
 .asset-video-editor-body {
@@ -434,15 +441,43 @@ main input[type="file"]:focus-visible {
     min-height: 0;
     flex-direction: column;
     align-self: stretch;
+    overflow: hidden;
   }
   .asset-video-editor-body > :nth-child(2) textarea {
-    min-height: 8rem;
+    min-height: 0;
     flex: 1;
+    overflow-y: auto;
+  }
+  .asset-video-editor-body > :nth-child(2) > :nth-child(2) {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .asset-video-editor-body > :nth-child(3) { grid-area: characters; }
   .asset-video-editor-body > :nth-child(4) { grid-area: category; }
   .asset-video-editor-body > :nth-child(5) { grid-area: thumbnail; }
+  .asset-video-editor-body > :nth-child(5) > label {
+    min-height: 9rem;
+    padding: .85rem;
+  }
+  .asset-video-editor-body > :nth-child(5) > label > span.relative {
+    width: min(48%, 13rem);
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
   .asset-video-editor-body > :nth-child(6) { grid-area: publication; }
+}
+
+@media (max-width: 767px) {
+  .asset-video-editor-body > :nth-child(5) > label {
+    align-items: flex-start;
+  }
+  .asset-video-editor-body > :nth-child(5) > label > span.relative {
+    width: min(42vw, 11rem);
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
 }
 
 .dark main input[type="file"] {

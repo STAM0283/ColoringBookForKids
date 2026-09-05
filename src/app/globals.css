@@ -394,6 +394,21 @@ main input[type="file"]:focus-visible {
 @media (max-width: 639px) { .admin-help-bubble { right: 1rem !important; bottom: 1rem !important; width: 3.25rem !important; min-width: 3.25rem !important; height: 3.25rem !important; min-height: 3.25rem !important; } .admin-help-label { display: none; } }
 
 /* Modification vidéo : grille paysage compacte, sans défilement sur écran standard. */
+.video-create-dialog > header,
+.video-create-dialog > footer,
+.asset-video-edit-dialog > header,
+.asset-video-edit-dialog > footer { flex-shrink: 0; }
+.asset-modal:has(.asset-video-edit-dialog) { overflow: hidden; }
+.asset-video-edit-dialog {
+  display: flex;
+  max-height: calc(100dvh - 2rem);
+  flex-direction: column;
+}
+.asset-video-editor-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 @media (min-width: 768px) {
   .asset-modal:has(.asset-video-edit-dialog) {
     max-width: 60rem !important;
@@ -403,10 +418,11 @@ main input[type="file"]:focus-visible {
     display: grid;
     grid-template-columns: minmax(0, 1.08fr) minmax(18rem, .92fr);
     grid-template-areas:
-      "title category"
+      "title characters"
+      "description category"
       "description thumbnail"
-      "description publication";
-    grid-template-rows: auto auto auto;
+      "publication thumbnail";
+    grid-template-rows: auto auto auto auto;
     align-items: start;
     gap: 1rem 1.25rem;
   }
@@ -423,9 +439,10 @@ main input[type="file"]:focus-visible {
     min-height: 8rem;
     flex: 1;
   }
-  .asset-video-editor-body > :nth-child(3) { grid-area: category; }
-  .asset-video-editor-body > :nth-child(4) { grid-area: thumbnail; }
-  .asset-video-editor-body > :nth-child(5) { grid-area: publication; }
+  .asset-video-editor-body > :nth-child(3) { grid-area: characters; }
+  .asset-video-editor-body > :nth-child(4) { grid-area: category; }
+  .asset-video-editor-body > :nth-child(5) { grid-area: thumbnail; }
+  .asset-video-editor-body > :nth-child(6) { grid-area: publication; }
 }
 
 .dark main input[type="file"] {
